@@ -22,7 +22,7 @@ pyvista.set_plot_theme('document')
 import qdarktheme
 qdarktheme.enable_hi_dpi()
 
-from mvvm_lib.pyqt6_binding import PyQtBinding
+from mvvm_lib.pyqt_binding import PyQtBinding
 
 #import qdarkstyle
 #from qdarkstyle.light.palette import LightPalette
