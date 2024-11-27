@@ -48,7 +48,7 @@ class VolumeSlicerModel(NeuXtalVizModel):
         self.spacings = []
         for block in blocks:
             self.spacings.append(self.spacing*np.array(block))
-            self.signals.append(skimage.measure.block_reduce(signal, 
+            self.signals.append(skimage.measure.block_reduce(signal,
                                                              block_size=block,
                                                              func=np.nanmean,
                                                              cval=np.nan))
@@ -198,7 +198,7 @@ class VolumeSlicerModel(NeuXtalVizModel):
 
         dim = mtd['cut'].getNonIntegratedDimensions()[0]
 
-        x = np.linspace(dim.getMinimum(), 
+        x = np.linspace(dim.getMinimum(),
                         dim.getMaximum(),
                         dim.getNBoundaries())
 
@@ -287,7 +287,7 @@ class VolumeSlicerModel(NeuXtalVizModel):
         t = v/s
         p = v/v[0,0]
 
-        s = np.linalg.norm(p, axis=0) 
+        s = np.linalg.norm(p, axis=0)
 
         return p, t, s
 

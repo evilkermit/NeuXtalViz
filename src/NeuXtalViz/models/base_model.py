@@ -1,14 +1,23 @@
-from mantid.simpleapi import HasUB
-
-from mantid.geometry import OrientedLattice
+from typing import Any
 
 import numpy as np
+from mantid.simpleapi import HasUB
+from mantid.geometry import OrientedLattice
+
+from NeuXtalViz.models.config import SharedConfig
+
 
 class NeuXtalVizModel():
 
     def __init__(self):
 
         self.UB = None
+        self.config = SharedConfig()
+
+    def get_config_attribute(self, model: str, attribute_name: str) -> Any:
+        config_obj = getattr(self.config, model)
+
+        return getattr(config_obj, attribute_name)
 
     def has_UB(self, ws):
         """
@@ -64,7 +73,7 @@ class NeuXtalVizModel():
             params = ol.a(), ol.b(), ol.c(), ol.alpha(), ol.beta(), ol.gamma()
 
             u, v = ol.getuVector(), ol.getvVector()
-            
+
             u = np.array(u)/np.abs(u).max()
             v = np.array(v)/np.abs(v).max()
 

@@ -1,3 +1,5 @@
+from functools import partial
+
 from qtpy.QtWidgets import (QWidget,
                             QHBoxLayout,
                             QVBoxLayout,
@@ -23,29 +25,59 @@ from matplotlib.transforms import Affine2D
 
 from NeuXtalViz.views.base_view import NeuXtalVizWidget
 
-cmaps = {'Sequential': 'viridis',
-         'Binary': 'binary',
-         'Diverging': 'bwr',
-         'Rainbow': 'turbo'}
+cmaps = {
+    'Sequential': 'viridis',
+    'Binary': 'binary',
+    'Diverging': 'bwr',
+    'Rainbow': 'turbo'
+}
 
-opacities = {'Linear': {'Low->High' : 'linear', 'High->Low' : 'linear_r'},
-             'Geometric': {'Low->High' : 'geom', 'High->Low' : 'geom_r'},
-             'Sigmoid': {'Low->High' : 'sigmoid', 'High->Low' : 'sigmoid_r'}}
+opacities = {
+    'Linear': 'linear',
+    'Geometric': 'geom',
+    'Sigmoid': 'sigmoid'
+}
 
 class VolumeSlicerView(NeuXtalVizWidget):
 
     slice_ready = pyqtSignal()
     cut_ready = pyqtSignal()
 
-    def __init__(self, parent=None):
-
+    def __init__(self, view_model, parent=None):
         super().__init__(parent)
 
-        self.tab_widget = QTabWidget(self)
+        self.view_model = view_model
 
+        self.tab_widget = QTabWidget(self)
         self.slicer_tab()
 
         self.layout().addWidget(self.tab_widget, stretch=1)
+
+        self.view_model.clim_bind.connect(partial(self._update_combobox, self.clim_combo))
+        self.view_model.cmap_bind.connect(partial(self._update_combobox, self.cbar_combo))
+        self.view_model.cut_axis_bind.connect(partial(self._update_combobox, self.cut_combo))
+        self.view_model.cut_thickness_bind.connect(partial(self._update_lineedit, self.cut_thickness_line))
+        self.view_model.cut_value_bind.connect(partial(self._update_lineedit, self.cut_line))
+        self.view_model.opacity_bind.connect(partial(self._update_combobox, self.opacity_combo))
+        self.view_model.scale_3d_bind.connect(partial(self._update_combobox, self.vol_scale_combo))
+        self.view_model.scale_2d_bind.connect(partial(self._update_combobox, self.slice_scale_combo))
+        self.view_model.scale_1d_bind.connect(partial(self._update_combobox, self.cut_scale_combo))
+        self.view_model.slice_axis_bind.connect(partial(self._update_combobox, self.slice_combo))
+        self.view_model.slice_thickness_bind.connect(partial(self._update_lineedit, self.slice_thickness_line))
+        self.view_model.slice_value_bind.connect(partial(self._update_lineedit, self.slice_line))
+
+        self.view_model.update_view()
+
+    def _update_combobox(self, combobox, config):
+        combobox.clear()
+
+        for index, option in enumerate([str(item.value) for item in type(config)]):
+            combobox.addItem(option)
+            if option == config:
+                combobox.setCurrentIndex(index)
+
+    def _update_lineedit(self, lineedit, config):
+        lineedit.setText(str(config))
 
     def slicer_tab(self):
 
@@ -62,15 +94,8 @@ class VolumeSlicerView(NeuXtalVizWidget):
         draw_layout = QHBoxLayout()
 
         self.vol_scale_combo = QComboBox(self)
-        self.vol_scale_combo.addItem('Linear')
-        self.vol_scale_combo.addItem('Log')
-        self.vol_scale_combo.setCurrentIndex(0)
 
         self.opacity_combo = QComboBox(self)
-        self.opacity_combo.addItem('Linear')
-        self.opacity_combo.addItem('Geometric')
-        self.opacity_combo.addItem('Sigmoid')
-        self.opacity_combo.setCurrentIndex(0)
 
         self.range_combo = QComboBox(self)
         self.range_combo.addItem('Low->High')
@@ -78,16 +103,8 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.range_combo.setCurrentIndex(0)
 
         self.clim_combo = QComboBox(self)
-        self.clim_combo.addItem('Min/Max')
-        self.clim_combo.addItem('μ±3×σ')
-        self.clim_combo.addItem('Q₃/Q₁±1.5×IQR')
-        self.clim_combo.setCurrentIndex(2)
 
         self.cbar_combo = QComboBox(self)
-        self.cbar_combo.addItem('Sequential')
-        self.cbar_combo.addItem('Rainbow')
-        self.cbar_combo.addItem('Binary')
-        self.cbar_combo.addItem('Diverging')
 
         self.load_NXS_button = QPushButton('Load NXS', self)
 
@@ -99,23 +116,16 @@ class VolumeSlicerView(NeuXtalVizWidget):
         draw_layout.addWidget(self.load_NXS_button)
 
         self.slice_combo = QComboBox(self)
-        self.slice_combo.addItem('Axis 1/2')
-        self.slice_combo.addItem('Axis 1/3')
-        self.slice_combo.addItem('Axis 2/3')
-        self.slice_combo.setCurrentIndex(0)
 
         self.cut_combo = QComboBox(self)
-        self.cut_combo.addItem('Axis 1')
-        self.cut_combo.addItem('Axis 2')
-        self.cut_combo.setCurrentIndex(0)
 
         slice_label = QLabel('Slice:', self)
         cut_label = QLabel('Cut:', self)
 
-        self.slice_line = QLineEdit('0.0')
+        self.slice_line = QLineEdit()
         self.slice_line.setValidator(validator)
 
-        self.cut_line = QLineEdit('0.0')
+        self.cut_line = QLineEdit()
         self.cut_line.setValidator(validator)
 
         validator = QDoubleValidator(0.0001, 100, 5, notation=notation)
@@ -123,19 +133,15 @@ class VolumeSlicerView(NeuXtalVizWidget):
         slice_thickness_label = QLabel('Thickness:', self)
         cut_thickness_label = QLabel('Thickness:', self)
 
-        self.slice_thickness_line = QLineEdit('0.1')
-        self.cut_thickness_line = QLineEdit('0.1')
+        self.slice_thickness_line = QLineEdit()
+        self.cut_thickness_line = QLineEdit()
 
         self.slice_thickness_line.setValidator(validator)
         self.cut_thickness_line.setValidator(validator)
 
         self.slice_scale_combo = QComboBox(self)
-        self.slice_scale_combo.addItem('Linear')
-        self.slice_scale_combo.addItem('Log')
 
         self.cut_scale_combo = QComboBox(self)
-        self.cut_scale_combo.addItem('Linear')
-        self.cut_scale_combo.addItem('Log')
 
         slider_layout = QVBoxLayout()
         bar_layout = QHBoxLayout()
@@ -342,7 +348,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         cmap = cmaps[self.get_colormap()]
 
         self.clear_scene()
-        
+
         self.norm = np.array(norm).copy()
         origin = norm
         origin[origin.index(1)] = value
