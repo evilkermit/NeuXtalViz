@@ -19,5 +19,7 @@ dependencies:
   - dill
   - psutil
   - multiprocess
+  - pydantic
   - pip:
+    - mvvm-lib
     - pyqtdarktheme

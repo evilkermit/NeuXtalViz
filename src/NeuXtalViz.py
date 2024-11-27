@@ -6,7 +6,7 @@ os.environ['QT_API'] = 'pyqt5'
 
 from qtpy.QtWidgets import (QApplication,
                             QMainWindow,
-                            QWidget, 
+                            QWidget,
                             QAction,
                             QStackedWidget,
                             QVBoxLayout,
@@ -14,13 +14,15 @@ from qtpy.QtWidgets import (QApplication,
 
 from qtpy.QtGui import QIcon
 
-from NeuXtalViz._version import __version__  
+from NeuXtalViz._version import __version__
 
 import pyvista
 pyvista.set_plot_theme('document')
 
 import qdarktheme
 qdarktheme.enable_hi_dpi()
+
+from mvvm_lib.pyqt6_binding import PyQtBinding
 
 #import qdarkstyle
 #from qdarkstyle.light.palette import LightPalette
@@ -41,9 +43,8 @@ from NeuXtalViz.views.modulation_tools import ModulationView
 from NeuXtalViz.models.modulation_tools import ModulationModel
 from NeuXtalViz.presenters.modulation_tools import Modulation
 
+from NeuXtalViz.view_models.volume_slicer import VolumeSlicerViewModel
 from NeuXtalViz.views.volume_slicer import VolumeSlicerView
-from NeuXtalViz.models.volume_slicer import VolumeSlicerModel
-from NeuXtalViz.presenters.volume_slicer import VolumeSlicer
 
 from NeuXtalViz.views.experiment_planner import ExperimentView
 from NeuXtalViz.models.experiment_planner import ExperimentModel
@@ -55,11 +56,13 @@ class NeuXtalViz(QMainWindow):
 
     def __new__(cls):
         if NeuXtalViz.__instance is None:
-            NeuXtalViz.__instance = QMainWindow.__new__(cls)  
+            NeuXtalViz.__instance = QMainWindow.__new__(cls)
         return NeuXtalViz.__instance
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        binding = PyQtBinding()
 
         icon = os.path.join(os.path.dirname(__file__), 'icons/NeuXtalViz.png')
         self.setWindowIcon(QIcon(icon))
@@ -106,9 +109,7 @@ class NeuXtalViz(QMainWindow):
         self.m = Modulation(m_view, m_model)
         app_stack.addWidget(m_view)
 
-        vs_view = VolumeSlicerView(self)
-        vs_model = VolumeSlicerModel()
-        self.vs = VolumeSlicer(vs_view, vs_model)
+        vs_view = VolumeSlicerView(view_model=VolumeSlicerViewModel(binding), parent=self)
         app_stack.addWidget(vs_view)
 
         layout.addWidget(app_stack)
@@ -136,7 +137,7 @@ class NeuXtalViz(QMainWindow):
         # self.showMaximized()
 
 def handle_exception(exc_type, exc_value, exc_traceback):
-    error_message = ''.join(traceback.format_exception(exc_type, 
+    error_message = ''.join(traceback.format_exception(exc_type,
                                                        exc_value,
                                                        exc_traceback))
 
