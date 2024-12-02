@@ -59,6 +59,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.view_model.cut_thickness_bind.connect(partial(self._update_lineedit, self.cut_thickness_line))
         self.view_model.cut_value_bind.connect(partial(self._update_lineedit, self.cut_line))
         self.view_model.opacity_bind.connect(partial(self._update_combobox, self.opacity_combo))
+        self.view_model.opacity_range_bind.connect(partial(self._update_combobox, self.range_combo))
         self.view_model.scale_3d_bind.connect(partial(self._update_combobox, self.vol_scale_combo))
         self.view_model.scale_2d_bind.connect(partial(self._update_combobox, self.slice_scale_combo))
         self.view_model.scale_1d_bind.connect(partial(self._update_combobox, self.cut_scale_combo))
@@ -94,16 +95,9 @@ class VolumeSlicerView(NeuXtalVizWidget):
         draw_layout = QHBoxLayout()
 
         self.vol_scale_combo = QComboBox(self)
-
         self.opacity_combo = QComboBox(self)
-
         self.range_combo = QComboBox(self)
-        self.range_combo.addItem('Low->High')
-        self.range_combo.addItem('High->Low')
-        self.range_combo.setCurrentIndex(0)
-
         self.clim_combo = QComboBox(self)
-
         self.cbar_combo = QComboBox(self)
 
         self.load_NXS_button = QPushButton('Load NXS', self)
@@ -116,7 +110,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
         draw_layout.addWidget(self.load_NXS_button)
 
         self.slice_combo = QComboBox(self)
-
         self.cut_combo = QComboBox(self)
 
         slice_label = QLabel('Slice:', self)
@@ -140,7 +133,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.cut_thickness_line.setValidator(validator)
 
         self.slice_scale_combo = QComboBox(self)
-
         self.cut_scale_combo = QComboBox(self)
 
         slider_layout = QVBoxLayout()
