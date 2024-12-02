@@ -43,15 +43,24 @@ class VolumeSlicerView(NeuXtalVizWidget):
     slice_ready = pyqtSignal()
     cut_ready = pyqtSignal()
 
-    def __init__(self, view_model, parent=None):
+    def __init__(self, base_view_model, view_model, parent=None):
         super().__init__(parent)
 
+        self.base_view_model = base_view_model
         self.view_model = view_model
 
         self.tab_widget = QTabWidget(self)
         self.slicer_tab()
 
         self.layout().addWidget(self.tab_widget, stretch=1)
+
+        self.connect_state()
+        self.connect_actions()
+
+    def connect_state(self) -> None:
+        # TODO: move to base view
+        self.base_view_model.status_bind.connect(self.set_info)
+        self.base_view_model.step_bind.connect(self.set_step)
 
         self.view_model.clim_bind.connect(partial(self._update_combobox, self.clim_combo))
         self.view_model.cmap_bind.connect(partial(self._update_combobox, self.cbar_combo))
@@ -69,16 +78,12 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         self.view_model.update_view()
 
-    def _update_combobox(self, combobox, config):
-        combobox.clear()
+    def connect_actions(self) -> None:
+        self.load_NXS_button.clicked.connect(self.load_NXS)
 
-        for index, option in enumerate([str(item.value) for item in type(config)]):
-            combobox.addItem(option)
-            if option == config:
-                combobox.setCurrentIndex(index)
-
-    def _update_lineedit(self, lineedit, config):
-        lineedit.setText(str(config))
+        self.view_model.render_bind.connect(self.add_histo)
+        # TODO: move to base view
+        self.view_model.transform_bind.connect(self.set_transform)
 
     def slicer_tab(self):
 
@@ -207,6 +212,148 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         slice_tab.setLayout(plots_layout)
 
+    def load_NXS(self) -> None:
+        filename = self.load_NXS_file_dialog()
+
+        worker = self.worker(partial(self.view_model.load_NXS, filename))
+        worker.connect_result(self.view_model.load_NXS_complete)
+        worker.connect_finished(self.redraw_data)
+        worker.connect_progress(self.base_view_model.update_processing)
+
+        self.start_worker_pool(worker)
+
+    def load_NXS_file_dialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.AnyFile)
+
+        filename, _ = file_dialog.getOpenFileName(
+            self,
+            'Load NXS file',
+            '',
+            'NXS files (*.nxs)',
+            options=options
+        )
+
+        return filename
+
+    def redraw_data(self) -> None:
+        worker = self.worker(self.view_model.redraw_data)
+        worker.connect_result(self.view_model.redraw_data_complete)
+        # TODO
+        # worker.connect_finished(self.slice_data)
+        worker.connect_progress(self.base_view_model.update_processing)
+
+        self.start_worker_pool(worker)
+
+    def add_histo(self, args):
+        histo_dict, normal, norm, value = args
+        opacity = opacities[self.get_opacity()]
+        if self.get_range() == 'High->Low':
+            opacity += '_r'
+
+        log_scale = True if self.get_vol_scale() == 'Log' else False
+
+        cmap = cmaps[self.get_colormap()]
+
+        self.clear_scene()
+
+        self.norm = np.array(norm).copy()
+        origin = norm
+        origin[origin.index(1)] = value
+
+        signal = histo_dict['signal']
+        labels = histo_dict['labels']
+
+        min_lim = histo_dict['min_lim']
+        max_lim = histo_dict['max_lim']
+        spacing = histo_dict['spacing']
+
+        P = histo_dict['projection']
+        T = histo_dict['transform']
+        S = histo_dict['scales']
+
+        grid = pv.ImageData()
+
+        grid.dimensions = np.array(signal.shape)+1
+
+        grid.origin = min_lim
+        grid.spacing = spacing
+
+        min_bnd = min_lim*S
+        max_bnd = max_lim*S
+
+        bounds = np.array([[min_bnd[i], max_bnd[i]] for i in [0,1,2]])
+        limits = np.array([[min_lim[i], max_lim[i]] for i in [0,1,2]])
+
+        a = pv._vtk.vtkMatrix3x3()
+        b = pv._vtk.vtkMatrix4x4()
+        for i in range(3):
+            for j in range(3):
+                a.SetElement(i,j,T[i,j])
+                b.SetElement(i,j,P[i,j])
+
+        grid.cell_data['scalars'] = signal.flatten(order='F')
+
+        normal /= np.linalg.norm(normal)
+
+        origin = np.dot(P, origin)
+
+        clim = [np.nanmin(signal), np.nanmax(signal)]
+
+        self.clip = self.plotter.add_volume_clip_plane(grid,
+                                                       opacity=opacity,
+                                                       log_scale=log_scale,
+                                                       clim=clim,
+                                                       normal=normal,
+                                                       origin=origin,
+                                                       origin_translation=False,
+                                                       show_scalar_bar=False,
+                                                       normal_rotation=False,
+                                                       cmap=cmap,
+                                                       user_matrix=b)
+
+        prop = self.clip.GetOutlineProperty()
+        prop.SetOpacity(0)
+
+        prop = self.clip.GetEdgesProperty()
+        prop.SetOpacity(0)
+
+        actor = self.plotter.show_grid(xtitle=labels[0],
+                                       ytitle=labels[1],
+                                       ztitle=labels[2],
+                                       font_size=8,
+                                       minor_ticks=True)
+
+        actor.SetAxisBaseForX(*T[:,0])
+        actor.SetAxisBaseForY(*T[:,1])
+        actor.SetAxisBaseForZ(*T[:,2])
+
+        actor.bounds = bounds.ravel()
+        actor.SetXAxisRange(limits[0])
+        actor.SetYAxisRange(limits[1])
+        actor.SetZAxisRange(limits[2])
+
+        axis0_args = *limits[0], actor.n_xlabels, actor.x_label_format
+        axis1_args = *limits[1], actor.n_ylabels, actor.y_label_format
+        axis2_args = *limits[2], actor.n_zlabels, actor.z_label_format
+
+        axis0_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis0_args)
+        axis1_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis1_args)
+        axis2_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis2_args)
+
+        actor.SetAxisLabels(0, axis0_label)
+        actor.SetAxisLabels(1, axis1_label)
+        actor.SetAxisLabels(2, axis2_label)
+
+        self.reset_scene()
+
+        self.clip.AddObserver('InteractionEvent', self.interaction_callback)
+
+        self.P_inv = np.linalg.inv(P)
+
     def connect_vol_scale_combo(self, update_vol):
 
         self.vol_scale_combo.currentIndexChanged.connect(update_vol)
@@ -310,130 +457,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
     def get_color_bar_values(self):
 
         return self.min_slider.value(), self.max_slider.value()
-
-    def connect_load_NXS(self, load_NXS):
-
-        self.load_NXS_button.clicked.connect(load_NXS)
-
-    def load_NXS_file_dialog(self):
-
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.AnyFile)
-
-        filename, _ = file_dialog.getOpenFileName(self,
-                                                  'Load NXS file',
-                                                  '',
-                                                  'NXS files (*.nxs)',
-                                                  options=options)
-
-        return filename
-
-    def add_histo(self, histo_dict, normal, norm, value):
-
-        opacity = opacities[self.get_opacity()][self.get_range()]
-
-        log_scale = True if self.get_vol_scale() == 'Log' else False
-
-        cmap = cmaps[self.get_colormap()]
-
-        self.clear_scene()
-
-        self.norm = np.array(norm).copy()
-        origin = norm
-        origin[origin.index(1)] = value
-
-        signal = histo_dict['signal']
-        labels = histo_dict['labels']
-
-        min_lim = histo_dict['min_lim']
-        max_lim = histo_dict['max_lim']
-        spacing = histo_dict['spacing']
-
-        P = histo_dict['projection']
-        T = histo_dict['transform']
-        S = histo_dict['scales']
-
-        grid = pv.ImageData()
-
-        grid.dimensions = np.array(signal.shape)+1
-
-        grid.origin = min_lim
-        grid.spacing = spacing
-
-        min_bnd = min_lim*S
-        max_bnd = max_lim*S
-
-        bounds = np.array([[min_bnd[i], max_bnd[i]] for i in [0,1,2]])
-        limits = np.array([[min_lim[i], max_lim[i]] for i in [0,1,2]])
-
-        a = pv._vtk.vtkMatrix3x3()
-        b = pv._vtk.vtkMatrix4x4()
-        for i in range(3):
-            for j in range(3):
-                a.SetElement(i,j,T[i,j])
-                b.SetElement(i,j,P[i,j])
-
-        grid.cell_data['scalars'] = signal.flatten(order='F')
-
-        normal /= np.linalg.norm(normal)
-
-        origin = np.dot(P, origin)
-
-        clim = [np.nanmin(signal), np.nanmax(signal)]
-
-        self.clip = self.plotter.add_volume_clip_plane(grid,
-                                                       opacity=opacity,
-                                                       log_scale=log_scale,
-                                                       clim=clim,
-                                                       normal=normal,
-                                                       origin=origin,
-                                                       origin_translation=False,
-                                                       show_scalar_bar=False,
-                                                       normal_rotation=False,
-                                                       cmap=cmap,
-                                                       user_matrix=b)
-
-        prop = self.clip.GetOutlineProperty()
-        prop.SetOpacity(0)
-
-        prop = self.clip.GetEdgesProperty()
-        prop.SetOpacity(0)
-
-        actor = self.plotter.show_grid(xtitle=labels[0],
-                                       ytitle=labels[1],
-                                       ztitle=labels[2],
-                                       font_size=8,
-                                       minor_ticks=True)
-
-        actor.SetAxisBaseForX(*T[:,0])
-        actor.SetAxisBaseForY(*T[:,1])
-        actor.SetAxisBaseForZ(*T[:,2])
-
-        actor.bounds = bounds.ravel()
-        actor.SetXAxisRange(limits[0])
-        actor.SetYAxisRange(limits[1])
-        actor.SetZAxisRange(limits[2])
-
-        axis0_args = *limits[0], actor.n_xlabels, actor.x_label_format
-        axis1_args = *limits[1], actor.n_ylabels, actor.y_label_format
-        axis2_args = *limits[2], actor.n_zlabels, actor.z_label_format
-
-        axis0_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis0_args)
-        axis1_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis1_args)
-        axis2_label = pv.plotting.cube_axes_actor.make_axis_labels(*axis2_args)
-
-        actor.SetAxisLabels(0, axis0_label)
-        actor.SetAxisLabels(1, axis1_label)
-        actor.SetAxisLabels(2, axis2_label)
-
-        self.reset_scene()
-
-        self.clip.AddObserver('InteractionEvent', self.interaction_callback)
-
-        self.P_inv = np.linalg.inv(P)
 
     def interaction_callback(self, caller, event):
 

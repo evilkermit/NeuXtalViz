@@ -215,6 +215,17 @@ class NeuXtalVizWidget(QWidget):
 
         self.threadpool = ThreadPool()
 
+    def _update_combobox(self, combobox, config):
+        combobox.clear()
+
+        for index, option in enumerate([str(item.value) for item in type(config)]):
+            combobox.addItem(option)
+            if option == config:
+                combobox.setCurrentIndex(index)
+
+    def _update_lineedit(self, lineedit, config):
+        lineedit.setText(str(config))
+
     def start_worker_pool(self, worker):
 
         self.threadpool.start_worker_pool(worker)
@@ -224,7 +235,7 @@ class NeuXtalVizWidget(QWidget):
         Worker task.
 
         """
-        
+
         return Worker(task)
 
     def set_info(self, status):
@@ -252,6 +263,10 @@ class NeuXtalVizWidget(QWidget):
         """
 
         self.progress_bar.setValue(progress)
+
+    def update_processing(self, status, progress) -> None:
+        self.set_info(status)
+        self.set_step(progress)
 
     def set_oriented_lattice_parameters(self, a, b, c,
                                               alpha, beta, gamma,

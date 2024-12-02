@@ -27,6 +27,8 @@ from mvvm_lib.pyqt_binding import PyQtBinding
 #import qdarkstyle
 #from qdarkstyle.light.palette import LightPalette
 
+from NeuXtalViz.view_models.base_view_model import NeuXtalVizViewModel
+
 from NeuXtalViz.views.crystal_structure_tools import CrystalStructureView
 from NeuXtalViz.models.crystal_structure_tools import CrystalStructureModel
 from NeuXtalViz.presenters.crystal_structure_tools import CrystalStructure
@@ -63,6 +65,7 @@ class NeuXtalViz(QMainWindow):
         super().__init__(parent)
 
         binding = PyQtBinding()
+        base_vm = NeuXtalVizViewModel(binding)
 
         icon = os.path.join(os.path.dirname(__file__), 'icons/NeuXtalViz.png')
         self.setWindowIcon(QIcon(icon))
@@ -109,7 +112,7 @@ class NeuXtalViz(QMainWindow):
         self.m = Modulation(m_view, m_model)
         app_stack.addWidget(m_view)
 
-        vs_view = VolumeSlicerView(view_model=VolumeSlicerViewModel(binding), parent=self)
+        vs_view = VolumeSlicerView(base_view_model=base_vm, view_model=VolumeSlicerViewModel(binding), parent=self)
         app_stack.addWidget(vs_view)
 
         layout.addWidget(app_stack)
