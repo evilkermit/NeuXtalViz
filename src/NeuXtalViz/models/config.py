@@ -28,6 +28,11 @@ class OpacityEnum(str, Enum):
     sigmoid = 'Sigmoid'
 
 
+class OpacityRangeEnum(str, Enum):
+    low_to_high = 'Low->High'
+    high_to_low = 'High->Low'
+
+
 class ScaleEnum(str, Enum):
     linear = 'Linear'
     log = 'Log'
@@ -51,7 +56,7 @@ class VolumeSlicer(BaseModel):
     clim: ClimEnum = ClimEnum.iqr
     cmap: ColorMapEnum = ColorMapEnum.sequential
     opacity: OpacityEnum = OpacityEnum.linear
-    opacity_reverse: bool = False
+    opacity_range: str = OpacityRangeEnum.low_to_high
     scale_3d: ScaleEnum = ScaleEnum.linear
 
     # slice options
