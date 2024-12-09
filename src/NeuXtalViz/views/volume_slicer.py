@@ -23,7 +23,7 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.transforms import Affine2D
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.views.utilities import update_combobox, update_lineedit
 
 cmaps = {
     'Sequential': 'viridis',
@@ -38,7 +38,7 @@ opacities = {
     'Sigmoid': 'sigmoid'
 }
 
-class VolumeSlicerView(NeuXtalVizWidget):
+class VolumeSlicerView(QWidget):
 
     slice_ready = pyqtSignal()
     cut_ready = pyqtSignal()
@@ -51,34 +51,21 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.tab_widget = QTabWidget(self)
         self.slicer_tab()
 
-        self.layout().addWidget(self.tab_widget, stretch=1)
-
-        self.view_model.clim_bind.connect(partial(self._update_combobox, self.clim_combo))
-        self.view_model.cmap_bind.connect(partial(self._update_combobox, self.cbar_combo))
-        self.view_model.cut_axis_bind.connect(partial(self._update_combobox, self.cut_combo))
-        self.view_model.cut_thickness_bind.connect(partial(self._update_lineedit, self.cut_thickness_line))
-        self.view_model.cut_value_bind.connect(partial(self._update_lineedit, self.cut_line))
-        self.view_model.opacity_bind.connect(partial(self._update_combobox, self.opacity_combo))
-        self.view_model.opacity_range_bind.connect(partial(self._update_combobox, self.range_combo))
-        self.view_model.scale_3d_bind.connect(partial(self._update_combobox, self.vol_scale_combo))
-        self.view_model.scale_2d_bind.connect(partial(self._update_combobox, self.slice_scale_combo))
-        self.view_model.scale_1d_bind.connect(partial(self._update_combobox, self.cut_scale_combo))
-        self.view_model.slice_axis_bind.connect(partial(self._update_combobox, self.slice_combo))
-        self.view_model.slice_thickness_bind.connect(partial(self._update_lineedit, self.slice_thickness_line))
-        self.view_model.slice_value_bind.connect(partial(self._update_lineedit, self.slice_line))
+        self.view_model.clim_bind.connect(partial(update_combobox, self.clim_combo))
+        self.view_model.cmap_bind.connect(partial(update_combobox, self.cbar_combo))
+        self.view_model.cut_axis_bind.connect(partial(update_combobox, self.cut_combo))
+        self.view_model.cut_thickness_bind.connect(partial(update_lineedit, self.cut_thickness_line))
+        self.view_model.cut_value_bind.connect(partial(update_lineedit, self.cut_line))
+        self.view_model.opacity_bind.connect(partial(update_combobox, self.opacity_combo))
+        self.view_model.opacity_range_bind.connect(partial(update_combobox, self.range_combo))
+        self.view_model.scale_3d_bind.connect(partial(update_combobox, self.vol_scale_combo))
+        self.view_model.scale_2d_bind.connect(partial(update_combobox, self.slice_scale_combo))
+        self.view_model.scale_1d_bind.connect(partial(update_combobox, self.cut_scale_combo))
+        self.view_model.slice_axis_bind.connect(partial(update_combobox, self.slice_combo))
+        self.view_model.slice_thickness_bind.connect(partial(update_lineedit, self.slice_thickness_line))
+        self.view_model.slice_value_bind.connect(partial(update_lineedit, self.slice_line))
 
         self.view_model.update_view()
-
-    def _update_combobox(self, combobox, config):
-        combobox.clear()
-
-        for index, option in enumerate([str(item.value) for item in type(config)]):
-            combobox.addItem(option)
-            if option == config:
-                combobox.setCurrentIndex(index)
-
-    def _update_lineedit(self, lineedit, config):
-        lineedit.setText(str(config))
 
     def slicer_tab(self):
 
@@ -212,74 +199,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         slice_tab.setLayout(plots_layout)
 
-    def connect_save_slice(self, save_slice):
-
-        self.save_slice_button.clicked.connect(save_slice)
-
-    def connect_save_cut(self, save_cut):
-
-        self.save_cut_button.clicked.connect(save_cut)
-
-    def connect_vol_scale_combo(self, update_vol):
-
-        self.vol_scale_combo.currentIndexChanged.connect(update_vol)
-
-    def connect_opacity_combo(self, update_opacity):
-
-        self.opacity_combo.currentIndexChanged.connect(update_opacity)
-
-    def connect_range_comboo(self, update_range):
-
-        self.range_combo.currentIndexChanged.connect(update_range)
-
-    def connect_clim_combo(self, update_clim):
-
-        self.clim_combo.currentIndexChanged.connect(update_clim)
-
-    def connect_cbar_combo(self, update_cbar):
-
-        self.cbar_combo.currentIndexChanged.connect(update_cbar)
-
-    def connect_slice_thickness_line(self, update_slice):
-
-        self.slice_thickness_line.editingFinished.connect(update_slice)
-
-    def connect_cut_thickness_line(self, update_cut):
-
-        self.cut_thickness_line.editingFinished.connect(update_cut)
-
-    def connect_slice_line(self, update_slice):
-
-        self.slice_line.editingFinished.connect(update_slice)
-
-    def connect_cut_line(self, update_cut):
-
-        self.cut_line.editingFinished.connect(update_cut)
-
-    def connect_slice_scale_combo(self, update_slice):
-
-        self.slice_scale_combo.currentIndexChanged.connect(update_slice)
-
-    def connect_cut_scale_combo(self, update_cut):
-
-        self.cut_scale_combo.currentIndexChanged.connect(update_cut)
-
-    def connect_slice_combo(self, update_slice):
-
-        self.slice_combo.currentIndexChanged.connect(update_slice)
-
-    def connect_cut_combo(self, update_cut):
-
-        self.cut_combo.currentIndexChanged.connect(update_cut)
-
-    def connect_min_slider(self, update_colorbar):
-
-        self.min_slider.valueChanged.connect(update_colorbar)
-
-    def connect_max_slider(self, update_colorbar):
-
-        self.max_slider.valueChanged.connect(update_colorbar)
-
     def save_file_dialog(self):
 
         options = QFileDialog.Options()
@@ -335,14 +254,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
             self.canvas_slice.draw_idle()
             self.canvas_slice.flush_events()
-
-    def get_color_bar_values(self):
-
-        return self.min_slider.value(), self.max_slider.value()
-
-    def connect_load_NXS(self, load_NXS):
-
-        self.load_NXS_button.clicked.connect(load_NXS)
 
     def load_NXS_file_dialog(self):
 
@@ -481,10 +392,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.slice_line.blockSignals(False)
 
         self.slice_ready.emit()
-
-    def connect_slice_ready(self, reslice):
-
-        self.slice_ready.connect(reslice)
 
     def __format_axis_coord(self, x, y):
 
@@ -644,10 +551,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         self.cut_ready.emit()
 
-    def connect_cut_ready(self, recut):
-
-        self.cut_ready.connect(recut)
-
     def on_motion(self, event):
 
         if self.linecut['is_dragging'] and event.inaxes == self.ax_slice:
@@ -685,79 +588,3 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
             self.canvas_slice.draw_idle()
             self.canvas_slice.flush_events()
-
-    def get_vol_scale(self):
-
-        return self.vol_scale_combo.currentText()
-
-    def get_opacity(self):
-
-        return self.opacity_combo.currentText()
-
-    def get_range(self):
-
-        return self.range_combo.currentText()
-
-    def get_colormap(self):
-
-        return self.cbar_combo.currentText()
-
-    def get_slice_value(self):
-
-        if self.slice_line.hasAcceptableInput():
-
-            return float(self.slice_line.text())
-
-    def get_cut_value(self):
-
-        if self.cut_line.hasAcceptableInput():
-
-            return float(self.cut_line.text())
-
-    def set_slice_value(self, val):
-
-        self.slice_line.setText(str(round(val, 4)))
-
-    def set_cut_value(self, val):
-
-         self.cut_line.setText(str(round(val, 4)))
-
-    def get_slice_thickness(self):
-
-        if self.slice_thickness_line.hasAcceptableInput():
-
-            return float(self.slice_thickness_line.text())
-
-    def get_cut_thickness(self):
-
-        if self.cut_thickness_line.hasAcceptableInput():
-
-            return float(self.cut_thickness_line.text())
-
-    def set_slice_thickness(self, val):
-
-        self.slice_thickness_line.setText(str(val))
-
-    def set_cut_thickness(self, val):
-
-        self.cut_thickness_line.setText(str(val))
-
-    def get_clim_clip_type(self):
-
-        return self.clim_combo.currentText()
-
-    def get_slice(self):
-
-        return self.slice_combo.currentText()
-
-    def get_cut(self):
-
-        return self.cut_combo.currentText()
-
-    def get_slice_scale(self):
-
-        return self.slice_scale_combo.currentText().lower()
-
-    def get_cut_scale(self):
-
-        return self.cut_scale_combo.currentText().lower()

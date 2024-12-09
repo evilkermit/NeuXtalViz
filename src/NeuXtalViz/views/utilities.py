@@ -20,7 +20,7 @@ class Worker(QRunnable):
         self.task = task
         self.args = args
         self.kwargs = kwargs
-        
+
         self.kwargs['progress'] = self.emit_progress
 
     @pyqtSlot()
@@ -32,7 +32,7 @@ class Worker(QRunnable):
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
-            self.signals.result.emit(result) 
+            self.signals.result.emit(result)
         finally:
             self.signals.finished.emit()
 
@@ -61,3 +61,14 @@ class ThreadPool(QThreadPool):
     def start_worker_pool(self, worker):
 
         self.start(worker)
+
+def update_combobox(combobox, config):
+    combobox.clear()
+
+    for index, option in enumerate([str(item.value) for item in type(config)]):
+        combobox.addItem(option)
+        if option == config:
+            combobox.setCurrentIndex(index)
+
+def update_lineedit(lineedit, config):
+    lineedit.setText(str(config))

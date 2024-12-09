@@ -28,7 +28,7 @@ from NeuXtalViz.views.utilities import Worker, ThreadPool
 #           'Dark': pv.themes.DarkTheme(),
 #           'ParaView': pv.themes.ParaViewTheme()}
 
-class NeuXtalVizWidget(QWidget):
+class VisualizationWidget(QWidget):
 
     def __init__(self, parent=None):
 
@@ -57,8 +57,7 @@ class NeuXtalVizWidget(QWidget):
 
         self.plotter = QtInteractor(self.frame)
 
-        layout = QHBoxLayout()
-        vis_layout = QVBoxLayout()
+        viz_layout = QVBoxLayout()
 
         camera_layout = QHBoxLayout()
         left_layout = QVBoxLayout()
@@ -80,24 +79,21 @@ class NeuXtalVizWidget(QWidget):
         camera_layout.addWidget(view_tab)
         camera_layout.addLayout(right_layout)
 
-        vis_layout.addLayout(camera_layout)
-        vis_layout.addWidget(self.plotter.interactor)
-        vis_layout.setStretch(1, 1)
+        viz_layout.addLayout(camera_layout)
+        viz_layout.addWidget(self.plotter.interactor)
+        viz_layout.setStretch(1, 1)
 
         info_tab = self.__init_info_tab()
 
-        vis_layout.addWidget(info_tab)
+        viz_layout.addWidget(info_tab)
 
         self.status_bar = QStatusBar()
         self.status_bar.showMessage('Ready!')
         self.progress_bar = QProgressBar()
         self.status_bar.addPermanentWidget(self.progress_bar)
 
-        vis_layout.addWidget(self.status_bar)
-
-        layout.addLayout(vis_layout, stretch=1)
-
-        self.setLayout(layout)
+        viz_layout.addWidget(self.status_bar)
+        self.setLayout(viz_layout)
 
         self.camera_position = None
         self.T = None
@@ -107,7 +103,7 @@ class NeuXtalVizWidget(QWidget):
         self.plotter.enable_parallel_projection()
 
     def __init_view_tab(self):
-        
+
         view_tab = QTabWidget()
 
         self.view_combo = QComboBox(self)
@@ -552,7 +548,7 @@ class NeuXtalVizWidget(QWidget):
 
         if self.axes_show():
             if T is not None:
-                self.T = T     
+                self.T = T
                 self.show_axes()
 
     def reciprocal_lattice(self):
@@ -564,7 +560,7 @@ class NeuXtalVizWidget(QWidget):
         return self.recip_box.isChecked()
 
     def show_axes(self):
-        
+
         if not self.axes_show():
             self.plotter.hide_axes()
         elif self.T is not None:
