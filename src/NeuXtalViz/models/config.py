@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,13 +43,6 @@ class SliceAxisEnum(str, Enum):
     axis_2_3 = 'Axis 2/3'
 
 
-class CameraConfig(BaseModel):
-    axes: list[Optional[float]] = [None, None, None]
-    parallel_projection: bool = False
-    reciprocal_lattice: bool = True
-    type: str = '[hkl]'
-
-
 class VolumeSlicer(BaseModel):
     # volume rendering options
     clim: ClimEnum = ClimEnum.iqr
@@ -73,7 +65,6 @@ class VolumeSlicer(BaseModel):
 
 
 class Config(BaseModel):
-    camera: CameraConfig = CameraConfig()
     volume_slicer: VolumeSlicer = VolumeSlicer()
 
 

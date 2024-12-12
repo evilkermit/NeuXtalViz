@@ -32,11 +32,9 @@ cmaps = {
     'Rainbow': 'turbo'
 }
 
-opacities = {
-    'Linear': 'linear',
-    'Geometric': 'geom',
-    'Sigmoid': 'sigmoid'
-}
+opacities = {'Linear': {'Low->High' : 'linear', 'High->Low' : 'linear_r'},
+             'Geometric': {'Low->High' : 'geom', 'High->Low' : 'geom_r'},
+             'Sigmoid': {'Low->High' : 'sigmoid', 'High->Low' : 'sigmoid_r'}}
 
 class VolumeSlicerView(NeuXtalVizWidget):
 
@@ -47,38 +45,49 @@ class VolumeSlicerView(NeuXtalVizWidget):
         super().__init__(parent)
 
         self.view_model = view_model
+        self.view_model.config_bind.connect(self._on_config_update)
+        self.view_model.add_cut_bind.connect(self.add_cut)
+        self.view_model.add_slice_bind.connect(self.add_slice)
+        self.view_model.cut_data_bind.connect(self.cut_data)
+        self.view_model.redraw_data_bind.connect(self.add_histo)
+        self.view_model.set_oriented_lattice_parameters_bind.connect(self.set_oriented_lattice_parameters)
+        self.view_model.slice_data_bind.connect(self.slice_data)
 
         self.tab_widget = QTabWidget(self)
         self.slicer_tab()
 
         self.layout().addWidget(self.tab_widget, stretch=1)
-
-        self.view_model.clim_bind.connect(partial(self._update_combobox, self.clim_combo))
-        self.view_model.cmap_bind.connect(partial(self._update_combobox, self.cbar_combo))
-        self.view_model.cut_axis_bind.connect(partial(self._update_combobox, self.cut_combo))
-        self.view_model.cut_thickness_bind.connect(partial(self._update_lineedit, self.cut_thickness_line))
-        self.view_model.cut_value_bind.connect(partial(self._update_lineedit, self.cut_line))
-        self.view_model.opacity_bind.connect(partial(self._update_combobox, self.opacity_combo))
-        self.view_model.opacity_range_bind.connect(partial(self._update_combobox, self.range_combo))
-        self.view_model.scale_3d_bind.connect(partial(self._update_combobox, self.vol_scale_combo))
-        self.view_model.scale_2d_bind.connect(partial(self._update_combobox, self.slice_scale_combo))
-        self.view_model.scale_1d_bind.connect(partial(self._update_combobox, self.cut_scale_combo))
-        self.view_model.slice_axis_bind.connect(partial(self._update_combobox, self.slice_combo))
-        self.view_model.slice_thickness_bind.connect(partial(self._update_lineedit, self.slice_thickness_line))
-        self.view_model.slice_value_bind.connect(partial(self._update_lineedit, self.slice_line))
+        self.connect_actions()
 
         self.view_model.update_view()
 
-    def _update_combobox(self, combobox, config):
+    def _on_config_update(self, config):
+        self._update_combobox(self.clim_combo, config.clim)
+        self._update_combobox(self.cbar_combo, config.cmap)
+        self._update_combobox(self.opacity_combo, config.opacity)
+        self._update_combobox(self.range_combo, config.opacity_range)
+        self._update_combobox(self.vol_scale_combo, config.scale_3d)
+
+        self._update_combobox(self.cut_combo, config.cut_axis)
+        self._update_combobox(self.cut_scale_combo, config.scale_1d)
+        self._update_lineedit(self.cut_thickness_line, config.cut_thickness)
+        self._update_lineedit(self.cut_line, config.cut_value)
+
+        self._update_combobox(self.slice_combo, config.slice_axis)
+        self._update_combobox(self.slice_scale_combo, config.scale_2d)
+        self._update_lineedit(self.slice_thickness_line, config.slice_thickness)
+        self._update_lineedit(self.slice_line, config.slice_value)
+
+    def _update_combobox(self, combobox, value):
         combobox.clear()
 
-        for index, option in enumerate([str(item.value) for item in type(config)]):
+        for index, option in enumerate([str(item.value) for item in type(value)]):
             combobox.addItem(option)
-            if option == config:
+            if option == value:
                 combobox.setCurrentIndex(index)
 
-    def _update_lineedit(self, lineedit, config):
-        lineedit.setText(str(config))
+    def _update_lineedit(self, lineedit, value):
+        lineedit.setText(str(value))
 
     def slicer_tab(self):
 
@@ -212,73 +221,48 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         slice_tab.setLayout(plots_layout)
 
-    def connect_save_slice(self, save_slice):
+    def connect_actions(self):
+        self.load_NXS_button.clicked.connect(self.load_NXS)
 
-        self.save_slice_button.clicked.connect(save_slice)
+        self.slice_combo.currentIndexChanged.connect(self.redraw_data)
+        self.cut_combo.currentIndexChanged.connect(self.view_model.update_cut)
 
-    def connect_save_cut(self, save_cut):
+        self.slice_thickness_line.editingFinished.connect(self.view_model.update_slice)
+        self.cut_thickness_line.editingFinished.connect(self.view_model.update_cut)
 
-        self.save_cut_button.clicked.connect(save_cut)
+        self.clim_combo.currentIndexChanged.connect(self.redraw_data)
+        self.cbar_combo.currentIndexChanged.connect(self.redraw_data)
 
-    def connect_vol_scale_combo(self, update_vol):
+        self.min_slider.valueChanged.connect(self.update_colorbar_min)
+        self.max_slider.valueChanged.connect(self.update_colorbar_max)
 
-        self.vol_scale_combo.currentIndexChanged.connect(update_vol)
+        self.slice_scale_combo.currentIndexChanged.connect(self.view_model.update_slice)
+        self.cut_scale_combo.currentIndexChanged.connect(self.view_model.update_cut)
 
-    def connect_opacity_combo(self, update_opacity):
+        self.slice_line.editingFinished.connect(self.redraw_data)
+        self.cut_line.editingFinished.connect(self.view_model.update_cut)
 
-        self.opacity_combo.currentIndexChanged.connect(update_opacity)
+        self.slice_ready.connect(self.view_model.update_slice)
+        self.cut_ready.connect(self.view_model.update_cut)
 
-    def connect_range_comboo(self, update_range):
+        self.vol_scale_combo.currentIndexChanged.connect(self.redraw_data)
+        self.opacity_combo.currentIndexChanged.connect(self.redraw_data)
+        self.range_combo.currentIndexChanged.connect(self.redraw_data)
 
-        self.range_combo.currentIndexChanged.connect(update_range)
+        self.save_slice_button.clicked.connect(self.save_slice)
+        self.save_cut_button.clicked.connect(self.save_cut)
 
-    def connect_clim_combo(self, update_clim):
+    def save_cut(self):
+        filename = self.save_file_dialog()
 
-        self.clim_combo.currentIndexChanged.connect(update_clim)
+        if filename:
+            self.view_model.save_cut(filename)
 
-    def connect_cbar_combo(self, update_cbar):
+    def save_slice(self):
+        filename = self.save_file_dialog()
 
-        self.cbar_combo.currentIndexChanged.connect(update_cbar)
-
-    def connect_slice_thickness_line(self, update_slice):
-
-        self.slice_thickness_line.editingFinished.connect(update_slice)
-
-    def connect_cut_thickness_line(self, update_cut):
-
-        self.cut_thickness_line.editingFinished.connect(update_cut)
-
-    def connect_slice_line(self, update_slice):
-
-        self.slice_line.editingFinished.connect(update_slice)
-
-    def connect_cut_line(self, update_cut):
-
-        self.cut_line.editingFinished.connect(update_cut)
-
-    def connect_slice_scale_combo(self, update_slice):
-
-        self.slice_scale_combo.currentIndexChanged.connect(update_slice)
-
-    def connect_cut_scale_combo(self, update_cut):
-
-        self.cut_scale_combo.currentIndexChanged.connect(update_cut)
-
-    def connect_slice_combo(self, update_slice):
-
-        self.slice_combo.currentIndexChanged.connect(update_slice)
-
-    def connect_cut_combo(self, update_cut):
-
-        self.cut_combo.currentIndexChanged.connect(update_cut)
-
-    def connect_min_slider(self, update_colorbar):
-
-        self.min_slider.valueChanged.connect(update_colorbar)
-
-    def connect_max_slider(self, update_colorbar):
-
-        self.max_slider.valueChanged.connect(update_colorbar)
+        if filename:
+            self.view_model.save_slice(filename)
 
     def save_file_dialog(self):
 
@@ -340,9 +324,16 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         return self.min_slider.value(), self.max_slider.value()
 
-    def connect_load_NXS(self, load_NXS):
+    def load_NXS(self):
 
-        self.load_NXS_button.clicked.connect(load_NXS)
+        filename = self.load_NXS_file_dialog()
+
+        worker = self.worker(partial(self.view_model.load_NXS, filename))
+        worker.connect_result(self.view_model.load_NXS_complete)
+        worker.connect_finished(self.redraw_data)
+        worker.connect_progress(self.update_processing)
+
+        self.start_worker_pool(worker)
 
     def load_NXS_file_dialog(self):
 
@@ -360,7 +351,48 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         return filename
 
-    def add_histo(self, histo_dict, normal, norm, value):
+    def redraw_data(self):
+
+        worker = self.worker(self.view_model.redraw_data)
+        worker.connect_result(self.view_model.redraw_data_complete)
+        worker.connect_finished(self.slice_data)
+        worker.connect_progress(self.update_processing)
+
+        self.start_worker_pool(worker)
+
+    def slice_data(self):
+
+        worker = self.worker(self.view_model.slice_data)
+        worker.connect_result(self.view_model.slice_data_complete)
+        worker.connect_finished(self.cut_data)
+        worker.connect_progress(self.update_processing)
+
+        self.start_worker_pool(worker)
+
+    def cut_data(self):
+
+        worker = self.worker(self.view_model.cut_data)
+        worker.connect_result(self.view_model.cut_data_complete)
+        worker.connect_finished(self.update_complete)
+        worker.connect_progress(self.update_processing)
+
+        self.start_worker_pool(worker)
+
+    # TODO: This is just a shim while the rest of the application still uses MVP
+    def set_oriented_lattice_parameters(self, ol):
+        super().set_oriented_lattice_parameters(*ol)
+
+    # TODO: This is just a shim while the rest of the application still uses MVP
+    def update_complete(self):
+        self.update_processing('Complete!', 0)
+
+    # TODO: This is just a shim while the rest of the application still uses MVP
+    def update_processing(self, status: str = "Processing...", step: int = 1):
+        self.set_info(status)
+        self.set_step(step)
+
+    def add_histo(self, result):
+        histo_dict, normal, norm, value, trans = result
 
         opacity = opacities[self.get_opacity()][self.get_range()]
 
@@ -464,6 +496,8 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         self.P_inv = np.linalg.inv(P)
 
+        self.set_transform(trans)
+
     def interaction_callback(self, caller, event):
 
         orig = caller.GetOrigin()
@@ -481,10 +515,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.slice_line.blockSignals(False)
 
         self.slice_ready.emit()
-
-    def connect_slice_ready(self, reslice):
-
-        self.slice_ready.connect(reslice)
 
     def __format_axis_coord(self, x, y):
 
@@ -643,10 +673,6 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.linecut['is_dragging'] = False
 
         self.cut_ready.emit()
-
-    def connect_cut_ready(self, recut):
-
-        self.cut_ready.connect(recut)
 
     def on_motion(self, event):
 
