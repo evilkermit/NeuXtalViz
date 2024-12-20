@@ -21,7 +21,7 @@ import pyvista as pv
 
 from pyvistaqt import QtInteractor
 
-from NeuXtalViz.views.utilities import Worker, ThreadPool
+from NeuXtalViz.qt.utilities import Worker, ThreadPool
 
 # themes = {'Default': pv.themes.Theme(),
 #           'Document': pv.themes.DocumentTheme(),
@@ -107,7 +107,7 @@ class NeuXtalVizWidget(QWidget):
         self.plotter.enable_parallel_projection()
 
     def __init_view_tab(self):
-        
+
         view_tab = QTabWidget()
 
         self.view_combo = QComboBox(self)
@@ -552,7 +552,7 @@ class NeuXtalVizWidget(QWidget):
 
         if self.axes_show():
             if T is not None:
-                self.T = T     
+                self.T = T
                 self.show_axes()
 
     def reciprocal_lattice(self):
@@ -564,7 +564,7 @@ class NeuXtalVizWidget(QWidget):
         return self.recip_box.isChecked()
 
     def show_axes(self):
-        
+
         if not self.axes_show():
             self.plotter.hide_axes()
         elif self.T is not None:

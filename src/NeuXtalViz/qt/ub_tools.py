@@ -33,7 +33,7 @@ from mpl_toolkits.axisartist import Axes, GridHelperCurveLinear
 from mpl_toolkits.axisartist.grid_finder import (ExtremeFinderSimple,
                                                  MaxNLocator)
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.qt.base_view import NeuXtalVizWidget
 
 cmaps = {'Sequential': 'viridis',
          'Binary': 'binary',
@@ -1133,7 +1133,7 @@ class UBView(NeuXtalVizWidget):
     def verify_tab(self):
 
         inspect_verify_tab = QTabWidget()
-        self.tab_widget.addTab(inspect_verify_tab, 'Views')
+        self.tab_widget.addTab(inspect_verify_tab, 'qt')
 
         inspect_tab = self.__init_inspect_tab()
         verify_tab = self.__init_verify_tab()

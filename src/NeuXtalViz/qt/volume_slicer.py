@@ -23,7 +23,7 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.transforms import Affine2D
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.qt.base_view import NeuXtalVizWidget
 
 cmaps = {
     'Sequential': 'viridis',

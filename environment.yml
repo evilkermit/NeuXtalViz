@@ -21,5 +21,7 @@ dependencies:
   - multiprocess
   - pydantic
   - pip:
-    - mvvm-lib>=0.4.2
+    - nova-trame
     - pyqtdarktheme
+    - trame-matplotlib
+    - trame-vtk

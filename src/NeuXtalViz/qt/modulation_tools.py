@@ -22,7 +22,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.qt.base_view import NeuXtalVizWidget
 
 class ModulationView(NeuXtalVizWidget):
 
@@ -39,7 +39,7 @@ class ModulationView(NeuXtalVizWidget):
     def modulation_tab(self):
 
         mod_tab = QWidget()
-        self.tab_widget.addTab(mod_tab, 'Modulation')        
+        self.tab_widget.addTab(mod_tab, 'Modulation')
 
         modulation_layout = QVBoxLayout()
 
@@ -229,7 +229,7 @@ class ModulationView(NeuXtalVizWidget):
                     self.ax[2].stairs(l, bins, color=color)
             else:
                 self.plotter.add_mesh(points,
-                                      color='k', 
+                                      color='k',
                                       smooth_shading=True,
                                       point_size=5,
                                       render_points_as_spheres=True)
@@ -287,7 +287,7 @@ class ModulationView(NeuXtalVizWidget):
         pointsb = [(-1,1), (1,1), (1,-1), (-1,-1)]
 
         for i in range(4):
-            
+
             a, b = pointsa[i], pointsb[i]
 
             mesh = pv.Line(pointa=(a[0],a[1],0),

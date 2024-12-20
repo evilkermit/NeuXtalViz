@@ -22,8 +22,8 @@ import pyvista as pv
 import matplotlib.colors
 
 from NeuXtalViz.config.atoms import colors, radii
-from NeuXtalViz.views.periodic_table import PeriodicTableView
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.qt.periodic_table import PeriodicTableView
+from NeuXtalViz.qt.base_view import NeuXtalVizWidget
 
 class CrystalStructureView(NeuXtalVizWidget):
 
@@ -198,7 +198,7 @@ class CrystalStructureView(NeuXtalVizWidget):
     def factors_tab(self):
 
         fact_tab = QWidget()
-        self.tab_widget.addTab(fact_tab, 'Factors')        
+        self.tab_widget.addTab(fact_tab, 'Factors')
 
         factors_layout = QVBoxLayout()
 
