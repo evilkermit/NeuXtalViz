@@ -48,7 +48,7 @@ class VolumeSlicer(BaseModel):
     clim: ClimEnum = ClimEnum.iqr
     cmap: ColorMapEnum = ColorMapEnum.sequential
     opacity: OpacityEnum = OpacityEnum.linear
-    opacity_range: str = OpacityRangeEnum.low_to_high
+    opacity_range: OpacityRangeEnum = OpacityRangeEnum.low_to_high
     scale_3d: ScaleEnum = ScaleEnum.linear
 
     # slice options

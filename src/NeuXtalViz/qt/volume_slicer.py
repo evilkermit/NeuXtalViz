@@ -391,14 +391,15 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.set_info(status)
         self.set_step(step)
 
-    def add_histo(self, result):
-        histo_dict, normal, norm, value, trans = result
+    def add_histo(self, data):
+        config = data[0]
+        histo_dict, normal, norm, value, trans = data[1]
 
-        opacity = opacities[self.get_opacity()][self.get_range()]
+        opacity = opacities[config.opacity][config.opacity_range]
 
-        log_scale = True if self.get_vol_scale() == 'Log' else False
+        log_scale = True if config.scale_3d == 'Log' else False
 
-        cmap = cmaps[self.get_colormap()]
+        cmap = cmaps[config.cmap]
 
         self.clear_scene()
 
@@ -511,7 +512,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         value = np.dot(self.P_inv, orig)[ind]
 
         self.slice_line.blockSignals(True)
-        self.set_slice_value(value)
+        self.view_model.set_slice_value(value)
         self.slice_line.blockSignals(False)
 
         self.slice_ready.emit()
@@ -521,7 +522,9 @@ class VolumeSlicerView(NeuXtalVizWidget):
         x, y, _ = np.dot(self.T_inv, [x, y, 1])
         return 'x={:.3f}, y={:.3f}'.format(x, y)
 
-    def add_slice(self, slice_dict):
+    def add_slice(self, data):
+        config = data[0]
+        slice_dict = data[1]
 
         self.max_slider.blockSignals(True)
         self.max_slider.setValue(100)
@@ -531,7 +534,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.min_slider.setValue(0)
         self.min_slider.blockSignals(False)
 
-        cmap = cmaps[self.get_colormap()]
+        cmap = cmaps[config.cmap]
 
         x = slice_dict['x']
         y = slice_dict['y']
@@ -540,7 +543,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         title = slice_dict['title']
         signal = slice_dict['signal']
 
-        scale = self.get_slice_scale()
+        scale = config.scale_2d.lower()
 
         vmin = np.nanmin(signal)
         vmax = np.nanmax(signal)
@@ -595,7 +598,9 @@ class VolumeSlicerView(NeuXtalVizWidget):
         self.canvas_slice.draw_idle()
         self.canvas_slice.flush_events()
 
-    def add_cut(self, cut_dict):
+    def add_cut(self, data):
+        config = data[0]
+        cut_dict = data[1]
 
         x = cut_dict['x']
         y = cut_dict['y']
@@ -606,9 +611,9 @@ class VolumeSlicerView(NeuXtalVizWidget):
         label = cut_dict['label']
         title = cut_dict['title']
 
-        scale = self.get_cut_scale()
+        scale = config.scale_1d.lower()
 
-        line_cut = self.get_cut()
+        line_cut = config.cut_value
 
         lines = self.ax_slice.get_lines()
         for line in lines:
@@ -617,7 +622,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         xlim = self.xlim
         ylim = self.ylim
 
-        thick = self.get_cut_thickness()
+        thick = config.cut_thickness
 
         delta = 0 if thick is None else thick/2
 
@@ -691,11 +696,11 @@ class VolumeSlicerView(NeuXtalVizWidget):
             if direction == 'vertical':
                 l0 = [x-delta, x-delta], ylim
                 l1 = [x+delta, x+delta], ylim
-                self.set_cut_value(x)
+                self.view_model.set_cut_value(x)
             else:
                 l0 = xlim, [y-delta, y-delta]
                 l1 = xlim, [y+delta, y+delta]
-                self.set_cut_value(y)
+                self.view_model.set_cut_value(y)
 
             self.cut_line.blockSignals(False)
 
@@ -711,79 +716,3 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
             self.canvas_slice.draw_idle()
             self.canvas_slice.flush_events()
-
-    def get_vol_scale(self):
-
-        return self.vol_scale_combo.currentText()
-
-    def get_opacity(self):
-
-        return self.opacity_combo.currentText()
-
-    def get_range(self):
-
-        return self.range_combo.currentText()
-
-    def get_colormap(self):
-
-        return self.cbar_combo.currentText()
-
-    def get_slice_value(self):
-
-        if self.slice_line.hasAcceptableInput():
-
-            return float(self.slice_line.text())
-
-    def get_cut_value(self):
-
-        if self.cut_line.hasAcceptableInput():
-
-            return float(self.cut_line.text())
-
-    def set_slice_value(self, val):
-
-        self.slice_line.setText(str(round(val, 4)))
-
-    def set_cut_value(self, val):
-
-         self.cut_line.setText(str(round(val, 4)))
-
-    def get_slice_thickness(self):
-
-        if self.slice_thickness_line.hasAcceptableInput():
-
-            return float(self.slice_thickness_line.text())
-
-    def get_cut_thickness(self):
-
-        if self.cut_thickness_line.hasAcceptableInput():
-
-            return float(self.cut_thickness_line.text())
-
-    def set_slice_thickness(self, val):
-
-        self.slice_thickness_line.setText(str(val))
-
-    def set_cut_thickness(self, val):
-
-        self.cut_thickness_line.setText(str(val))
-
-    def get_clim_clip_type(self):
-
-        return self.clim_combo.currentText()
-
-    def get_slice(self):
-
-        return self.slice_combo.currentText()
-
-    def get_cut(self):
-
-        return self.cut_combo.currentText()
-
-    def get_slice_scale(self):
-
-        return self.slice_scale_combo.currentText().lower()
-
-    def get_cut_scale(self):
-
-        return self.cut_scale_combo.currentText().lower()

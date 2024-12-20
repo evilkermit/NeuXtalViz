@@ -101,6 +101,14 @@ class VolumeSlicerViewModel:
 
         return method
 
+    def set_cut_value(self, value):
+
+        self.config.cut_value = value
+
+    def set_slice_value(self, value):
+
+        self.config.slice_value = value
+
     def redraw_data(self, progress):
 
         if self.model.is_histo_loaded():
@@ -141,7 +149,7 @@ class VolumeSlicerViewModel:
 
         if result is not None:
 
-            self.redraw_data_bind.update_in_view(result)
+            self.redraw_data_bind.update_in_view((self.config, result))
 
     def slice_data(self, progress):
 
@@ -174,7 +182,7 @@ class VolumeSlicerViewModel:
 
         if result is not None:
 
-            self.add_slice_bind.update_in_view(result)
+            self.add_slice_bind.update_in_view((self.config, result))
 
     def cut_data(self, progress):
 
@@ -201,7 +209,7 @@ class VolumeSlicerViewModel:
 
         if result is not None:
 
-            self.add_cut_bind.update_in_view(result)
+            self.add_cut_bind.update_in_view((self.config, result))
 
     def save_slice(self, filename):
 
