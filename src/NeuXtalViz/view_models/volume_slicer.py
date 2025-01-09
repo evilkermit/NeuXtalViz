@@ -1,14 +1,20 @@
-from mvvm_lib.interface import BindingInterface
+from nova.mvvm.interface import BindingInterface
 
 from NeuXtalViz.models.volume_slicer import VolumeSlicerModel
+from NeuXtalViz.view_models.visualization_panel import VisualizationPanelViewModel
 
 
 class VolumeSlicerViewModel:
-    def __init__(self, binding: BindingInterface) -> None:
+    def __init__(
+        self, binding: BindingInterface, viz_vm: VisualizationPanelViewModel
+    ) -> None:
         self.model = VolumeSlicerModel()
+        self.viz_vm = viz_vm
 
         self.config = self.model.config.volume_slicer
-        self.config_bind = binding.new_bind(self.config)
+        self.config_bind = binding.new_bind(
+            self.config, callback_after_update=self.check_NXS_file
+        )
 
         self.add_cut_bind = binding.new_bind()
         self.add_slice_bind = binding.new_bind()
@@ -31,6 +37,20 @@ class VolumeSlicerViewModel:
         if self.model.is_histo_loaded():
 
             self.cut_data_bind.update_in_view(None)
+
+    def check_NXS_file(self, results) -> None:
+        if "nxs_filename" in results.get("updated", {}):
+            self.load_NXS(self.config.nxs_filename, lambda message, step: None)
+            result = self.redraw_data(lambda message, step: None)
+
+            if result is not None:
+                self.redraw_data_bind.update_in_view((self.config, result))
+
+    def clear_scene(self) -> None:
+        self.viz_vm.clear_scene()
+
+    def reset_scene(self) -> None:
+        self.viz_vm.reset_scene()
 
     def load_NXS(self, filename, progress):
 

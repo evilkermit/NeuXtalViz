@@ -7,11 +7,9 @@ import pyvista as pv
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.transforms import Affine2D
-from nova.trame.view.components import InputField
+from nova.trame.view.components import InputField, RemoteFileInput
 from nova.trame.view.layouts import GridLayout, HBoxLayout, VBoxLayout
-from trame.app.file_upload import ClientFile
 from trame.widgets import matplotlib
-from trame.widgets import vuetify3 as vuetify
 
 CLIMS = [
     {"title": "Min/Max", "value": "minmax"},
@@ -25,12 +23,26 @@ COLOR_MAPS = [
     {"title": "Rainbow", "value": "turbo"},
 ]
 
+cmaps = {
+    "Sequential": "viridis",
+    "Binary": "binary",
+    "Diverging": "bwr",
+    "Rainbow": "turbo",
+}
+opacities = {
+    "Linear": {"Low->High": "linear", "High->Low": "linear_r"},
+    "Geometric": {"Low->High": "geom", "High->Low": "geom_r"},
+    "Sigmoid": {"Low->High": "sigmoid", "High->Low": "sigmoid_r"},
+}
+
 
 class VolumeSlicerView:
     """Controls for the volume slicer view."""
 
     def __init__(self, view_model, plotter: pv.Plotter) -> None:
         self.vm = view_model
+        self.vm.redraw_data_bind.connect(self.add_histo)
+
         self.vm.update_view()
 
         self.colorbar: Optional[Colorbar] = None
@@ -61,14 +73,10 @@ class VolumeSlicerView:
                     items=(COLOR_MAPS,),
                     type="select",
                 )
-                vuetify.VBtn("Load NXS", click="trame.refs.nxs_file_input.click();")
-                InputField(
-                    ref="nxs_file_input",
-                    v_model="vs_nxs_file",
-                    classes="d-none",
-                    label="Load NXS",
-                    type="file",
-                    update_modelValue=(self.load_nxs, "[vs_nxs_file]"),
+                RemoteFileInput(
+                    v_model="config.nxs_filename",
+                    base_paths=["/HFIR", "/SNS"],
+                    extensions=["nxs"],
                 )
 
             # 2D view
@@ -128,11 +136,6 @@ class VolumeSlicerView:
                     type="select",
                 )
 
-    def load_nxs(self, nxs_file: str) -> None:
-        if nxs_file:
-            file_obj = ClientFile(nxs_file)
-            # self.vm.load_nxs(file_obj.content)
-
     def add_cut(self, _: Any = None) -> None:
         cut_dict = self.vm.get_cut_info()
 
@@ -185,31 +188,42 @@ class VolumeSlicerView:
         if self.figure_1d_window:
             self.figure_1d_window.update(figure=self.figure_1d)
 
-    def add_histo(self, _: Any = None) -> None:
-        cmap = self.vm.get_color_map()
-        histo_dict = self.vm.get_histo_info()
-        normal = self.vm.get_normal()
-        origin = self.vm.get_origin()
+    def add_histo(self, data: Any) -> None:
+        config = data[0]
+        histo_dict, normal, norm, value, trans = data[1]
 
-        if histo_dict == {}:
-            return
+        opacity = opacities[config.opacity][config.opacity_range]
+
+        log_scale = True if config.scale_3d == "Log" else False
+
+        cmap = cmaps[config.cmap]
+
+        self.vm.clear_scene()
+
+        self.norm = np.array(norm).copy()
+        origin = norm
+        origin[origin.index(1)] = value
 
         signal = histo_dict["signal"]
         labels = histo_dict["labels"]
+
         min_lim = histo_dict["min_lim"]
         max_lim = histo_dict["max_lim"]
         spacing = histo_dict["spacing"]
-        projection = histo_dict["projection"]
-        transform = histo_dict["transform"]
-        scales = histo_dict["scales"]
+
+        P = histo_dict["projection"]
+        T = histo_dict["transform"]
+        S = histo_dict["scales"]
 
         grid = pv.ImageData()
-        grid.dimensions = tuple(np.array(signal.shape) + 1)
+
+        grid.dimensions = np.array(signal.shape) + 1
+
         grid.origin = min_lim
         grid.spacing = spacing
 
-        min_bnd = min_lim * scales
-        max_bnd = max_lim * scales
+        min_bnd = min_lim * S
+        max_bnd = max_lim * S
 
         bounds = np.array([[min_bnd[i], max_bnd[i]] for i in [0, 1, 2]])
         limits = np.array([[min_lim[i], max_lim[i]] for i in [0, 1, 2]])
@@ -218,41 +232,48 @@ class VolumeSlicerView:
         b = pv._vtk.vtkMatrix4x4()
         for i in range(3):
             for j in range(3):
-                a.SetElement(i, j, transform[i, j])
-                b.SetElement(i, j, projection[i, j])
+                a.SetElement(i, j, T[i, j])
+                b.SetElement(i, j, P[i, j])
 
         grid.cell_data["scalars"] = signal.flatten(order="F")
 
-        if normal is not None:
-            normal /= np.linalg.norm(normal)
-        origin = np.dot(projection, origin)
+        normal /= np.linalg.norm(normal)
+
+        origin = np.dot(P, origin)
+
         clim = [np.nanmin(signal), np.nanmax(signal)]
 
         self.clip = self.plotter.add_volume_clip_plane(
             grid,
+            opacity=opacity,
+            log_scale=log_scale,
             clim=clim,
-            cmap=cmap,
-            log_scale=False,
             normal=normal,
-            normal_rotation=True,
-            opacity="linear",
             origin=origin,
-            origin_translation=True,
-            render=False,
+            origin_translation=False,
             show_scalar_bar=False,
+            normal_rotation=False,
+            cmap=cmap,
             user_matrix=b,
         )
 
         prop = self.clip.GetOutlineProperty()
         prop.SetOpacity(0)
 
-        actor = self.plotter.show_grid(
-            xtitle=labels[0], ytitle=labels[1], ztitle=labels[2], font_size=8, minor_ticks=True
-        )  # type: ignore
+        prop = self.clip.GetEdgesProperty()
+        prop.SetOpacity(0)
 
-        actor.SetAxisBaseForX(*transform[:, 0])
-        actor.SetAxisBaseForY(*transform[:, 1])
-        actor.SetAxisBaseForZ(*transform[:, 2])
+        actor = self.plotter.show_grid(
+            xtitle=labels[0],
+            ytitle=labels[1],
+            ztitle=labels[2],
+            font_size=8,
+            minor_ticks=True,
+        )
+
+        actor.SetAxisBaseForX(*T[:, 0])
+        actor.SetAxisBaseForY(*T[:, 1])
+        actor.SetAxisBaseForZ(*T[:, 2])
 
         actor.bounds = bounds.ravel()
         actor.SetXAxisRange(limits[0])
@@ -270,6 +291,12 @@ class VolumeSlicerView:
         actor.SetAxisLabels(0, axis0_label)
         actor.SetAxisLabels(1, axis1_label)
         actor.SetAxisLabels(2, axis2_label)
+
+        self.vm.reset_scene()
+
+        self.P_inv = np.linalg.inv(P)
+
+        # self.vm.add_slice()
 
     def add_slice(self, _: Any = None) -> None:
         cmap = self.vm.get_color_map()
@@ -340,3 +367,5 @@ class VolumeSlicerView:
 
         if self.figure_2d_window:
             self.figure_2d_window.update(figure=self.figure_2d)
+
+        self.vm.add_cut()

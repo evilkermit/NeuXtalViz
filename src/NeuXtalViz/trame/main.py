@@ -39,10 +39,10 @@ class NeuXtalViz(ThemedApp):
             layout.toolbar_title.set_text("NeuXtalViz")
 
             with layout.pre_content:
-                with vuetify.VTabs():
+                with vuetify.VTabs(classes="pl-4"):
                     vuetify.VTab("Volume Slicer")
 
             with layout.content:
                 with HBoxLayout(classes="pa-2"):
-                    viz_panel = VisualizationPanel(self.vm["main"])
+                    viz_panel = VisualizationPanel(self.vm["viz_panel"])
                     VolumeSlicerView(self.vm["volume_slicer"], viz_panel.plotter)

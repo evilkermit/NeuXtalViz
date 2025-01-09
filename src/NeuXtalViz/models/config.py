@@ -44,6 +44,11 @@ class SliceAxisEnum(str, Enum):
 
 
 class VolumeSlicer(BaseModel):
+    # input file
+    nxs_filename: str = Field(
+        default="", title="Input NXS File", examples="/SNS/path/to/input.nxs"
+    )
+
     # volume rendering options
     clim: ClimEnum = ClimEnum.iqr
     cmap: ColorMapEnum = ColorMapEnum.sequential

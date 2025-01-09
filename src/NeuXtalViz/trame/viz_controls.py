@@ -1,6 +1,5 @@
 """Controls above the visualization pane."""
 
-from functools import partial
 from typing import Optional
 
 import numpy as np
@@ -30,8 +29,7 @@ class VizControls:
             vuetify.VBtn("b*", click=self.view_ca_star)
             vuetify.VBtn("c*", click=self.view_ab_star)
 
-            # vuetify.VBtn("Reset View", column_span=2, click=partial(self.vm.reset_camera, force=True))
-            vuetify.VBtn("Reset View", column_span=2)
+            vuetify.VBtn("Reset View", column_span=2, click=self.vm.reset_view)
             vuetify.VBtn("-Qx", click=self.view_zy)
             vuetify.VBtn("-Qy", click=self.view_xz)
             vuetify.VBtn("-Qz", click=self.view_yx)
