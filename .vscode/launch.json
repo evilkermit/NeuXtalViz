@@ -1,0 +1,17 @@
+{
+    "configurations": [{
+        "name": "Launch QT",
+        "type": "debugpy",
+        "request": "launch",
+        "cwd": "${workspaceFolder}",
+        "program": "${workspaceFolder}/src/NeuXtalViz.py",
+        "args": ["qt"]
+    }, {
+        "name": "Launch Trame",
+        "type": "debugpy",
+        "request": "launch",
+        "cwd": "${workspaceFolder}",
+        "program": "${workspaceFolder}/src/NeuXtalViz.py",
+        "args": ["trame"]
+    }]
+}
