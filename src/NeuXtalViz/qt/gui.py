@@ -22,7 +22,7 @@ pyvista.set_plot_theme('document')
 import qdarktheme
 qdarktheme.enable_hi_dpi()
 
-from nova.mvvm.pyqt_binding import PyQtBinding
+from nova.mvvm.pyqt5_binding import PyQt5Binding
 
 #import qdarkstyle
 #from qdarkstyle.light.palette import LightPalette
@@ -43,6 +43,7 @@ from NeuXtalViz.qt.modulation_tools import ModulationView
 from NeuXtalViz.models.modulation_tools import ModulationModel
 from NeuXtalViz.presenters.modulation_tools import Modulation
 
+from NeuXtalViz.view_models.visualization_panel import VisualizationPanelViewModel
 from NeuXtalViz.view_models.volume_slicer import VolumeSlicerViewModel
 from NeuXtalViz.qt.volume_slicer import VolumeSlicerView
 
@@ -62,7 +63,7 @@ class NeuXtalViz(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        binding = PyQtBinding()
+        binding = PyQt5Binding()
 
         icon = os.path.join(os.path.dirname(__file__), 'icons/NeuXtalViz.png')
         self.setWindowIcon(QIcon(icon))
@@ -109,7 +110,10 @@ class NeuXtalViz(QMainWindow):
         self.m = Modulation(m_view, m_model)
         app_stack.addWidget(m_view)
 
-        vs_view = VolumeSlicerView(view_model=VolumeSlicerViewModel(binding), parent=self)
+        viz_vm = VisualizationPanelViewModel(binding)
+        vs_view = VolumeSlicerView(
+            view_model=VolumeSlicerViewModel(binding, viz_vm), parent=self
+        )
         app_stack.addWidget(vs_view)
 
         layout.addWidget(app_stack)

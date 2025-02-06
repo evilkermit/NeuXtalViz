@@ -1,7 +1,7 @@
 import argparse
 
 from NeuXtalViz.qt.gui import gui
-from NeuXtalViz.trame.trame import trame
+from NeuXtalViz.trame.gui import trame
 
 
 def main():
