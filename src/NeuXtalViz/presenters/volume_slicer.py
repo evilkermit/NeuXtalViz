@@ -1,9 +1,8 @@
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
-
-
-class VolumeSlicer(NeuXtalVizPresenter):
-    def __init__(self, view, model):
-        super(VolumeSlicer, self).__init__(view, model)
+class VolumeSlicer:
+    def __init__(self, main_presenter, view, model):
+        self.main_presenter = main_presenter
+        self.view = view
+        self.model = model
 
         self.view.connect_load_NXS(self.load_NXS)
 
@@ -101,12 +100,12 @@ class VolumeSlicer(NeuXtalVizPresenter):
             worker = self.view.worker(self.load_NXS_process)
             worker.connect_result(self.load_NXS_complete)
             worker.connect_finished(self.redraw_data)
-            worker.connect_progress(self.update_processing)
+            worker.connect_progress(self.main_presenter.update_processing)
 
             self.view.start_worker_pool(worker)
 
     def load_NXS_complete(self, result):
-        self.update_oriented_lattice()
+        self.main_presenter.update_oriented_lattice()
 
     def load_NXS_process(self, progress):
         progress("Processing...", 1)
@@ -174,7 +173,7 @@ class VolumeSlicer(NeuXtalVizPresenter):
         worker = self.view.worker(self.redraw_data_process)
         worker.connect_result(self.redraw_data_complete)
         worker.connect_finished(self.slice_data)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -222,7 +221,7 @@ class VolumeSlicer(NeuXtalVizPresenter):
         worker = self.view.worker(self.slice_data_process)
         worker.connect_result(self.slice_data_complete)
         worker.connect_finished(self.cut_data)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -258,8 +257,8 @@ class VolumeSlicer(NeuXtalVizPresenter):
     def cut_data(self):
         worker = self.view.worker(self.cut_data_process)
         worker.connect_result(self.cut_data_complete)
-        worker.connect_finished(self.update_complete)
-        worker.connect_progress(self.update_processing)
+        worker.connect_finished(self.main_presenter.update_complete)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 

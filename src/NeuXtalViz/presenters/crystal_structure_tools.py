@@ -1,10 +1,11 @@
 from NeuXtalViz.presenters.periodic_table import PeriodicTable
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
 
 
-class CrystalStructure(NeuXtalVizPresenter):
-    def __init__(self, view, model):
-        super(CrystalStructure, self).__init__(view, model)
+class CrystalStructure:
+    def __init__(self, main_presenter, view, model):
+        self.main_presenter = main_presenter
+        self.view = view
+        self.model = model
 
         self.view.connect_group_generator(self.generate_groups)
         self.view.connect_setting_generator(self.generate_settings)
@@ -58,13 +59,13 @@ class CrystalStructure(NeuXtalVizPresenter):
         filename = self.view.load_CIF_file_dialog()
 
         if filename:
-            self.update_processing()
+            self.main_presenter.update_processing()
 
-            self.update_processing("Loading CIF...", 10)
+            self.main_presenter.update_processing("Loading CIF...", 10)
 
             self.model.load_CIF(filename)
 
-            self.update_processing("Loading CIF...", 50)
+            self.main_presenter.update_processing("Loading CIF...", 50)
 
             crystal_system = self.model.get_crystal_system()
             space_group = self.model.get_space_group()
@@ -86,24 +87,24 @@ class CrystalStructure(NeuXtalVizPresenter):
             atom_dict = self.model.generate_atom_positions()
             self.view.add_atoms(atom_dict)
 
-            self.update_processing("Loading CIF...", 80)
+            self.main_presenter.update_processing("Loading CIF...", 80)
 
             self.view.draw_cell(self.model.get_unit_cell_transform())
             self.view.set_transform(self.model.get_transform())
-            self.update_oriented_lattice()
+            self.main_presenter.update_oriented_lattice()
 
             form, z = self.model.get_chemical_formula_z_parameter()
             self.view.set_formula_z(form, z)
 
-            self.update_processing("Loading CIF...", 99)
+            self.main_presenter.update_processing("Loading CIF...", 99)
 
             vol = self.model.get_unit_cell_volume()
             self.view.set_unit_cell_volume(vol)
 
-            self.update_complete("CIF loaded!")
+            self.main_presenter.update_complete("CIF loaded!")
 
         else:
-            self.update_invalid()
+            self.main_presenter.update_invalid()
 
     def update_atoms(self):
         params = self.view.get_lattice_constants()
@@ -124,8 +125,8 @@ class CrystalStructure(NeuXtalVizPresenter):
     def calculate_F2(self):
         worker = self.view.worker(self.calculate_F2_process)
         worker.connect_result(self.calculate_F2_complete)
-        worker.connect_finished(self.update_complete)
-        worker.connect_progress(self.update_processing)
+        worker.connect_finished(self.main_presenter.update_complete)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -160,8 +161,8 @@ class CrystalStructure(NeuXtalVizPresenter):
     def calculate_hkl(self):
         worker = self.view.worker(self.calculate_hkl_process)
         worker.connect_result(self.calculate_hkl_complete)
-        worker.connect_finished(self.update_complete)
-        worker.connect_progress(self.update_processing)
+        worker.connect_finished(self.main_presenter.update_complete)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 

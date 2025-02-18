@@ -24,18 +24,16 @@ from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
 
-
-class ModulationView(NeuXtalVizWidget):
-    def __init__(self, parent=None):
+class ModulationView(QWidget):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.modulation_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
     def modulation_tab(self):
         mod_tab = QWidget()
@@ -174,7 +172,7 @@ class ModulationView(NeuXtalVizWidget):
             )
 
     def add_peaks(self, peak_dict):
-        self.plotter.clear_actors()
+        self.main_view.plotter.clear_actors()
 
         for i in range(3):
             self.ax[i].clear()
@@ -215,7 +213,7 @@ class ModulationView(NeuXtalVizWidget):
                     self.ax[1].stairs(k, bins, color=color)
                     self.ax[2].stairs(l, bins, color=color)
             else:
-                self.plotter.add_mesh(
+                self.main_view.plotter.add_mesh(
                     points,
                     color="k",
                     smooth_shading=True,
@@ -234,7 +232,7 @@ class ModulationView(NeuXtalVizWidget):
         self.canvas.draw_idle()
         self.canvas.flush_events()
 
-        _, mapper = self.plotter.add_composite(
+        _, mapper = self.main_view.plotter.add_composite(
             multiblock,
             multi_colors=True,
             smooth_shading=True,
@@ -259,7 +257,7 @@ class ModulationView(NeuXtalVizWidget):
         mesh = pv.Box(bounds=(-1, 1, -1, 1, -1, 1), level=0, quads=True)
         mesh.transform(A, inplace=True)
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             mesh, color="k", style="wireframe", render_lines_as_tubes=True
         )
 
@@ -267,7 +265,7 @@ class ModulationView(NeuXtalVizWidget):
             mesh = pv.Line(pointa=-np.array(point), pointb=point, resolution=1)
             mesh.transform(A, inplace=True)
 
-            self.plotter.add_mesh(
+            self.main_view.plotter.add_mesh(
                 mesh, color="k", style="wireframe", render_lines_as_tubes=True
             )
 
@@ -283,7 +281,7 @@ class ModulationView(NeuXtalVizWidget):
 
             mesh.transform(A, inplace=True)
 
-            self.plotter.add_mesh(
+            self.main_view.plotter.add_mesh(
                 mesh, color="k", style="wireframe", render_lines_as_tubes=True
             )
 
@@ -293,7 +291,7 @@ class ModulationView(NeuXtalVizWidget):
 
             mesh.transform(A, inplace=True)
 
-            self.plotter.add_mesh(
+            self.main_view.plotter.add_mesh(
                 mesh, color="k", style="wireframe", render_lines_as_tubes=True
             )
 
@@ -303,14 +301,14 @@ class ModulationView(NeuXtalVizWidget):
 
             mesh.transform(A, inplace=True)
 
-            self.plotter.add_mesh(
+            self.main_view.plotter.add_mesh(
                 mesh, color="k", style="wireframe", render_lines_as_tubes=True
             )
 
-        self.plotter.add_legend(
+        self.main_view.plotter.add_legend(
             legend, loc="lower right", bcolor="w", face=None
         )
 
-        self.plotter.enable_depth_peeling()
+        self.main_view.plotter.enable_depth_peeling()
 
-        self.reset_view()
+        self.main_view.reset_view()

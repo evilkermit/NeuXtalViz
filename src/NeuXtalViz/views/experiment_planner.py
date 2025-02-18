@@ -32,22 +32,20 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.ticker import FormatStrFormatter
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
 
-
-class ExperimentView(NeuXtalVizWidget):
+class ExperimentView(QWidget):
     roi_ready = Signal()
     viz_ready = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.coverage_tab()
         self.peak_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
     def coverage_tab(self):
         cov_tab = QWidget()
@@ -795,7 +793,7 @@ class ExperimentView(NeuXtalVizWidget):
             self.goniometer_table.setItem(row, 2, QTableWidgetItem(amax))
 
     def add_peaks(self, peak_dict):
-        self.plotter.clear_actors()
+        self.main_view.plotter.clear_actors()
 
         coords = np.array(peak_dict["coords"])
         colors = np.array(peak_dict["colors"])
@@ -805,7 +803,7 @@ class ExperimentView(NeuXtalVizWidget):
         points["colors"] = colors
         # points['sizes'] = 5*sizes
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             points,
             scalars="colors",
             rgb=True,
@@ -814,7 +812,7 @@ class ExperimentView(NeuXtalVizWidget):
             render_points_as_spheres=True,
         )
 
-        self.plotter.enable_depth_peeling()
+        self.main_view.plotter.enable_depth_peeling()
         # self.plotter.add_axes_at_origin()
 
         coords = np.array(peak_dict["axis_coords"])
@@ -822,12 +820,12 @@ class ExperimentView(NeuXtalVizWidget):
 
         for i in range(3):
             arrow = pv.Arrow([0, 0, 0], coords[i], scale="auto")
-            self.plotter.add_mesh(arrow, color=colors[i], smooth_shading=True)
+            self.main_view.plotter.add_mesh(arrow, color=colors[i], smooth_shading=True)
 
         radius = 0.2 * np.sqrt(np.min(np.sum(coords**2, axis=1)))
         sphere = pv.Sphere(radius=radius)
 
-        self.plotter.add_mesh(sphere, color="w", smooth_shading=True)
+        self.main_view.plotter.add_mesh(sphere, color="w", smooth_shading=True)
 
         Q_max = 2 * np.pi / peak_dict["axis_limit"]
 
@@ -835,7 +833,7 @@ class ExperimentView(NeuXtalVizWidget):
             pointa=(-Q_max, 0, 0), pointb=(Q_max, 0, 0), resolution=1
         )
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             mesh, color="k", style="wireframe", render_lines_as_tubes=True
         )
 
@@ -843,7 +841,7 @@ class ExperimentView(NeuXtalVizWidget):
             pointa=(0, -Q_max, 0), pointb=(0, Q_max, 0), resolution=1
         )
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             mesh, color="k", style="wireframe", render_lines_as_tubes=True
         )
 
@@ -851,11 +849,11 @@ class ExperimentView(NeuXtalVizWidget):
             pointa=(0, 0, -Q_max), pointb=(0, 0, Q_max), resolution=1
         )
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             mesh, color="k", style="wireframe", render_lines_as_tubes=True
         )
 
-        self.reset_view()
+        self.main_view.reset_view()
 
     def update_peaks_table(self, peaks):
         self.peaks_table.clearSelection()

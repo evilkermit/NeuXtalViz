@@ -25,19 +25,18 @@ import matplotlib.colors
 
 from NeuXtalViz.config.atoms import colors, radii
 from NeuXtalViz.views.periodic_table import PeriodicTableView
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
 
 
-class CrystalStructureView(NeuXtalVizWidget):
-    def __init__(self, parent=None):
+class CrystalStructureView(QWidget):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.structure_tab()
         self.factors_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
     def structure_tab(self):
         struct_tab = QWidget()
@@ -313,7 +312,7 @@ class CrystalStructureView(NeuXtalVizWidget):
         mesh = pv.Box(bounds=(0, 1, 0, 1, 0, 1), level=0, quads=True)
         mesh.transform(T, inplace=True)
 
-        self.plotter.add_mesh(
+        self.main_view.plotter.add_mesh(
             mesh, color="k", style="wireframe", render_lines_as_tubes=True
         )
 
@@ -507,7 +506,7 @@ class CrystalStructureView(NeuXtalVizWidget):
             param.setDisabled(fixed)
 
     def add_atoms(self, atom_dict):
-        self.plotter.clear_actors()
+        self.main_view.plotter.clear_actors()
 
         T = np.eye(4)
 
@@ -538,18 +537,20 @@ class CrystalStructureView(NeuXtalVizWidget):
 
         multiblock = pv.MultiBlock(geoms)
 
-        _, mapper = self.plotter.add_composite(
+        _, mapper = self.main_view.plotter.add_composite(
             multiblock, cmap=cmap, smooth_shading=True, show_scalar_bar=False
         )
 
         self.mapper = mapper
 
-        self.plotter.enable_block_picking(callback=self.highlight, side="left")
-        self.plotter.enable_block_picking(
+        self.main_view.plotter.enable_block_picking(
+            callback=self.highlight, side="left"
+        )
+        self.main_view.plotter.enable_block_picking(
             callback=self.highlight, side="right"
         )
 
-        self.reset_view()
+        self.main_view.reset_view()
 
     def highlight(self, index, dataset):
         color = self.mapper.block_attr[index].color

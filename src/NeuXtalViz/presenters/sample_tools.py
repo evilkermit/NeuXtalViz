@@ -1,11 +1,11 @@
 import numpy as np
 
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
 
-
-class Sample(NeuXtalVizPresenter):
-    def __init__(self, view, model):
-        super(Sample, self).__init__(view, model)
+class Sample:
+    def __init__(self, main_presenter, view, model):
+        self.main_presenter = main_presenter
+        self.view = view
+        self.model = model
 
         self.view.connect_row_highligter(self.highlight_row)
         self.view.connect_sample_parameters(self.update_parameters)
@@ -28,7 +28,7 @@ class Sample(NeuXtalVizPresenter):
             self.model.load_UB(filename)
             vol = self.model.get_volume()
             self.view.set_unit_cell_volume(vol)
-            self.update_oriented_lattice()
+            self.main_presenter.update_oriented_lattice()
 
     def update_parameters(self):
         params = self.view.get_sample_constants()

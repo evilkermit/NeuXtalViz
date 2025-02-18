@@ -22,12 +22,11 @@ import numpy as np
 import scipy.linalg
 
 from NeuXtalViz.models.periodic_table import PeriodicTableModel
-from NeuXtalViz.models.base_model import NeuXtalVizModel
 
 
-class CrystalStructureModel(NeuXtalVizModel):
-    def __init__(self):
-        super(CrystalStructureModel, self).__init__()
+class CrystalStructureModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
         CreateSampleWorkspace(OutputWorkspace="crystal")
 
@@ -122,7 +121,7 @@ class CrystalStructureModel(NeuXtalVizModel):
 
         SetUB(Workspace="crystal", UB=UB)
 
-        self.set_UB(UB)
+        self.main_model.set_UB(UB)
 
     def generate_F2(self, d_min=0.7):
         cryst_struct = mtd["crystal"].sample().getCrystalStructure()

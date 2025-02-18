@@ -191,9 +191,9 @@ centering_conditions = {
 }
 
 
-class ExperimentModel(NeuXtalVizModel):
-    def __init__(self):
-        super(ExperimentModel, self).__init__()
+class ExperimentModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
         CreatePeaksWorkspace(
             NumberOfPeaks=0,
@@ -441,7 +441,7 @@ class ExperimentModel(NeuXtalVizModel):
     def copy_UB(self):
         UB = self.get_UB()
         if UB is not None:
-            self.set_UB(UB)
+            self.main_model.set_UB(UB)
 
     def has_UB(self):
         if HasUB(Workspace="coverage"):
@@ -523,7 +523,7 @@ class ExperimentModel(NeuXtalVizModel):
         UB = mtd[sample].sample().getOrientedLattice().getUB().copy()
         SetUB(Workspace="coverage", UB=UB)
 
-        self.set_UB(UB)
+        self.main_model.set_UB(UB)
 
         instrument = mtd[sample].run().getProperty("instrument").value
         mode = mtd[sample].run().getProperty("mode").value
@@ -1144,7 +1144,7 @@ class CrystalPlan:
         SetUB(Workspace="instrument", UB=UB)
         SetUB(Workspace="crystal_plan", UB=UB)
 
-        self.UB = UB.copy()
+        self.main_model.UB = UB.copy()
         self.d_min = d_min
         self.d_max = 1.1 * np.max(
             [ol.d(1, 0, 0), ol.d(0, 1, 0), ol.d(0, 0, 1)]

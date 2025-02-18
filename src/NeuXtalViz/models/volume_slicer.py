@@ -11,13 +11,12 @@ import scipy.linalg
 
 import skimage.measure
 
-from NeuXtalViz.models.base_model import NeuXtalVizModel
 from NeuXtalViz.models.utilities import SaveMDToAscii
 
 
-class VolumeSlicerModel(NeuXtalVizModel):
-    def __init__(self):
-        super(VolumeSlicerModel, self).__init__()
+class VolumeSlicerModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
     def load_md_histo_workspace(self, filename):
         LoadMD(Filename=filename, OutputWorkspace="histo")
@@ -93,12 +92,12 @@ class VolumeSlicerModel(NeuXtalVizModel):
         return mtd.doesExist("cut")
 
     def set_B(self):
-        if self.has_UB("histo"):
+        if self.main_model.has_UB("histo"):
             ei = mtd["histo"].getExperimentInfo(0)
 
             B = ei.sample().getOrientedLattice().getB().copy()
 
-            self.set_UB(B)
+            self.main_model.set_UB(B)
 
     def set_W(self):
         ei = mtd["histo"].getExperimentInfo(0)
@@ -201,7 +200,7 @@ class VolumeSlicerModel(NeuXtalVizModel):
 
         slice_dict["signal"] = signal
 
-        Bp = np.dot(self.UB, self.W)
+        Bp = np.dot(self.main_model.UB, self.W)
 
         Q, R = scipy.linalg.qr(Bp)
 
@@ -327,10 +326,10 @@ class VolumeSlicerModel(NeuXtalVizModel):
         return trans
 
     def get_transform(self, reciprocal=True):
-        if self.UB is not None:
-            b = self.UB / np.linalg.norm(self.UB, axis=0)
+        if self.main_model.UB is not None:
+            b = self.main_model.UB / np.linalg.norm(self.main_model.UB, axis=0)
 
-            Bp = np.dot(self.UB, self.W)
+            Bp = np.dot(self.main_model.UB, self.W)
 
             Q, R = scipy.linalg.qr(Bp)
 
@@ -352,7 +351,7 @@ class VolumeSlicerModel(NeuXtalVizModel):
             return T
 
     def get_transforms(self):
-        Bp = np.dot(self.UB, self.W)
+        Bp = np.dot(self.main_model.UB, self.W)
 
         Q, R = scipy.linalg.qr(Bp)
 
@@ -367,8 +366,8 @@ class VolumeSlicerModel(NeuXtalVizModel):
         return p, t, s
 
     def get_normal_plane(self, ind):
-        if self.UB is not None:
-            Bp = np.dot(self.UB, self.W)
+        if self.main_model.UB is not None:
+            Bp = np.dot(self.main_model.UB, self.W)
 
             Q, R = scipy.linalg.qr(Bp)
 

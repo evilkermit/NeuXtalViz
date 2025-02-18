@@ -11,6 +11,7 @@ from qtpy.QtWidgets import (
     QWidget,
     QAction,
     QStackedWidget,
+    QHBoxLayout,
     QVBoxLayout,
     QMessageBox,
     QFileDialog,
@@ -30,6 +31,10 @@ qdarktheme.enable_hi_dpi()
 
 # import qdarkstyle
 # from qdarkstyle.light.palette import LightPalette
+
+from NeuXtalViz.views.base_view import NeuXtalVizWidget
+from NeuXtalViz.models.base_model import NeuXtalVizModel
+from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
 
 from NeuXtalViz.views.crystal_structure_tools import CrystalStructureView
 from NeuXtalViz.models.crystal_structure_tools import CrystalStructureModel
@@ -77,69 +82,72 @@ class NeuXtalViz(QMainWindow):
         main_window = QWidget(self)
         self.setCentralWidget(main_window)
 
-        layout = QVBoxLayout(main_window)
+        layout = QHBoxLayout(main_window)
+
+        main_view = NeuXtalVizWidget(self)
+        main_model = NeuXtalVizModel()
+        main_presenter = NeuXtalVizPresenter(main_view, main_model)
 
         app_stack = QStackedWidget()
-
+        app_stack.setLayout(QVBoxLayout())
         app_menu = self.menuBar().addMenu("Applications")
 
         cs_action = QAction("Crystal Structure", self)
         cs_action.triggered.connect(lambda: app_stack.setCurrentIndex(0))
         app_menu.addAction(cs_action)
 
+        cs_view = CrystalStructureView(main_view)
+        cs_model = CrystalStructureModel(main_model)
+        self.cs = CrystalStructure(main_presenter, cs_view, cs_model)
+        app_stack.addWidget(cs_view)
+
         s_action = QAction("Sample", self)
         s_action.triggered.connect(lambda: app_stack.setCurrentIndex(1))
         app_menu.addAction(s_action)
+
+        s_view = SampleView(main_view)
+        s_model = SampleModel(main_model)
+        self.s = Sample(main_presenter, s_view, s_model)
+        app_stack.addWidget(s_view)
 
         m_action = QAction("Modulation", self)
         m_action.triggered.connect(lambda: app_stack.setCurrentIndex(2))
         app_menu.addAction(m_action)
 
+        m_view = ModulationView(main_view)
+        m_model = ModulationModel(main_model)
+        self.m = Modulation(main_presenter, m_view, m_model)
+        app_stack.addWidget(m_view)
+
         vs_action = QAction("Volume Slicer", self)
         vs_action.triggered.connect(lambda: app_stack.setCurrentIndex(3))
         app_menu.addAction(vs_action)
 
-        cs_view = CrystalStructureView(self)
-        cs_model = CrystalStructureModel()
-        self.cs = CrystalStructure(cs_view, cs_model)
-        app_stack.addWidget(cs_view)
-
-        s_view = SampleView(self)
-        s_model = SampleModel()
-        self.s = Sample(s_view, s_model)
-        app_stack.addWidget(s_view)
-
-        m_view = ModulationView(self)
-        m_model = ModulationModel()
-        self.m = Modulation(m_view, m_model)
-        app_stack.addWidget(m_view)
-
-        vs_view = VolumeSlicerView(self)
-        vs_model = VolumeSlicerModel()
-        self.vs = VolumeSlicer(vs_view, vs_model)
+        vs_view = VolumeSlicerView(main_view)
+        vs_model = VolumeSlicerModel(main_model)
+        self.vs = VolumeSlicer(main_presenter, vs_view, vs_model)
         app_stack.addWidget(vs_view)
-
-        layout.addWidget(app_stack)
 
         ub_action = QAction("UB", self)
         ub_action.triggered.connect(lambda: app_stack.setCurrentIndex(4))
         app_menu.addAction(ub_action)
 
-        ub_view = UBView(self)
-        ub_model = UBModel()
-        self.ub = UB(ub_view, ub_model)
+        ub_view = UBView(main_view)
+        ub_model = UBModel(main_model)
+        self.ub = UB(main_presenter, ub_view, ub_model)
         app_stack.addWidget(ub_view)
 
         ep_action = QAction("Planner", self)
         ep_action.triggered.connect(lambda: app_stack.setCurrentIndex(5))
         app_menu.addAction(ep_action)
 
-        ep_view = ExperimentView(self)
-        ep_model = ExperimentModel()
-        self.ep = Experiment(ep_view, ep_model)
+        ep_view = ExperimentView(main_view)
+        ep_model = ExperimentModel(main_model)
+        self.ep = Experiment(main_presenter, ep_view, ep_model)
         app_stack.addWidget(ep_view)
 
-        layout.addWidget(app_stack)
+        layout.addLayout(main_view.layout, stretch=1)
+        layout.addWidget(app_stack, stretch=1)
 
         app_menu = self.menuBar().addMenu("External")
 

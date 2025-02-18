@@ -15,12 +15,10 @@ import scipy.spatial
 
 from sklearn.cluster import DBSCAN
 
-from NeuXtalViz.models.base_model import NeuXtalVizModel
 
-
-class ModulationModel(NeuXtalVizModel):
-    def __init__(self):
-        super(ModulationModel, self).__init__()
+class ModulationModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
         CreatePeaksWorkspace(
             OutputType="LeanElasticPeak",
@@ -36,10 +34,10 @@ class ModulationModel(NeuXtalVizModel):
         self.copy_UB()
 
     def copy_UB(self):
-        if self.has_UB("peaks"):
+        if self.main_model.has_UB("peaks"):
             UB = mtd["peaks"].sample().getOrientedLattice().getUB().copy()
 
-            self.set_UB(UB)
+            self.main_model.set_UB(UB)
 
     def load_peaks(self, filename):
         _, ext = os.path.splitext(filename)
@@ -51,12 +49,12 @@ class ModulationModel(NeuXtalVizModel):
 
         self.copy_UB()
 
-        UB = self.UB
+        UB = self.main_model.UB
 
         if UB is not None:
             SetUB(Workspace="peaks", UB=UB)
 
-        if self.has_UB("peaks"):
+        if self.main_model.has_UB("peaks"):
             CalculatePeaksHKL(PeaksWorkspace="peaks", OverWrite=True)
 
     def cluster_peaks(self, peak_info, eps=0.025, min_samples=15):
@@ -123,7 +121,7 @@ class ModulationModel(NeuXtalVizModel):
         return success
 
     def get_peak_info(self):
-        UB = self.UB
+        UB = self.main_model.UB
 
         if UB is not None:
             peak_dict = {}

@@ -9,12 +9,10 @@ from mantid.simpleapi import (
 import numpy as np
 import scipy.spatial
 
-from NeuXtalViz.models.base_model import NeuXtalVizModel
 
-
-class SampleModel(NeuXtalVizModel):
-    def __init__(self):
-        super(SampleModel, self).__init__()
+class SampleModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
         CreateSingleValuedWorkspace(OutputWorkspace="sample")
 
@@ -23,18 +21,18 @@ class SampleModel(NeuXtalVizModel):
 
         UB = mtd["sample"].sample().getOrientedLattice().getUB().copy()
 
-        self.set_UB(UB)
+        self.main_model.set_UB(UB)
 
     def get_volume(self):
-        if self.has_UB("sample"):
+        if self.main_model.has_UB("sample"):
             return mtd["sample"].sample().getOrientedLattice().volume()
 
     def get_euler_angles(self, u_vector, v_vector):
         w_vector = np.cross(u_vector, v_vector)
 
         if self.UB is not None and np.linalg.norm(w_vector) > 0:
-            u = np.dot(self.UB, u_vector)
-            v = np.dot(self.UB, v_vector)
+            u = np.dot(self.main_model.UB, u_vector)
+            v = np.dot(self.main_model.UB, v_vector)
 
             u /= np.linalg.norm(u)
 

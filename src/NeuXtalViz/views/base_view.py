@@ -58,7 +58,6 @@ class NeuXtalVizWidget(QWidget):
 
         self.plotter = QtInteractor(self.frame)
 
-        layout = QHBoxLayout()
         vis_layout = QVBoxLayout()
 
         camera_layout = QHBoxLayout()
@@ -95,10 +94,7 @@ class NeuXtalVizWidget(QWidget):
         self.status_bar.addPermanentWidget(self.progress_bar)
 
         vis_layout.addWidget(self.status_bar)
-
-        layout.addLayout(vis_layout, stretch=1)
-
-        self.setLayout(layout)
+        self.layout = vis_layout
 
         self.camera_position = None
         self.T = None

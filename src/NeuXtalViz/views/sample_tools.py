@@ -23,18 +23,16 @@ from PyQt5.QtCore import Qt, QRegExp
 
 import pyvista as pv
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
 
-
-class SampleView(NeuXtalVizWidget):
-    def __init__(self, parent=None):
+class SampleView(QWidget):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.sample_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
     def sample_tab(self):
         samp_tab = QWidget()
@@ -456,7 +454,7 @@ class SampleView(NeuXtalVizWidget):
             return vals
 
     def add_sample(self, sample_mesh):
-        self.plotter.clear_actors()
+        self.main_presenter.plotter.clear_actors()
 
         triangles = []
         for triangle in sample_mesh:
@@ -464,9 +462,11 @@ class SampleView(NeuXtalVizWidget):
 
         multiblock = pv.MultiBlock(triangles)
 
-        _, mapper = self.plotter.add_composite(multiblock, smooth_shading=True)
+        _, mapper = self.main_presenter.plotter.add_composite(
+            multiblock, smooth_shading=True
+        )
 
-        self.plotter.add_legend_scale(
+        self.main_presenter.plotter.add_legend_scale(
             corner_offset_factor=2,
             bottom_border_offset=50,
             top_border_offset=50,
@@ -476,9 +476,9 @@ class SampleView(NeuXtalVizWidget):
             xy_label_mode=False,
         )
 
-        self.plotter.add_axes_at_origin()
+        self.main_presenter.plotter.add_axes_at_origin()
 
-        self.reset_view()
+        self.main_presenter.reset_view()
 
     def set_absortion_parameters(self, abs_dict):
         self.sigma_a_line.setText("{:.4f}".format(abs_dict["sigma_a"]))

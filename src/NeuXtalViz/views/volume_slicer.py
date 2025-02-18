@@ -43,18 +43,18 @@ opacities = {
 }
 
 
-class VolumeSlicerView(NeuXtalVizWidget):
+class VolumeSlicerView(QWidget):
     slice_ready = pyqtSignal()
     cut_ready = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.slicer_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
     def slicer_tab(self):
         slice_tab = QWidget()
@@ -437,7 +437,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         cmap = cmaps[self.get_colormap()]
 
-        self.clear_scene()
+        self.main_view.clear_scene()
 
         self.norm = np.array(norm).copy()
         origin = norm
@@ -482,7 +482,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
 
         clim = [np.nanmin(signal), np.nanmax(signal)]
 
-        self.clip = self.plotter.add_volume_clip_plane(
+        self.clip = self.main_view.plotter.add_volume_clip_plane(
             grid,
             opacity=opacity,
             log_scale=log_scale,
@@ -502,7 +502,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         prop = self.clip.GetEdgesProperty()
         prop.SetOpacity(0)
 
-        actor = self.plotter.show_grid(
+        actor = self.main_view.plotter.show_grid(
             xtitle=labels[0],
             ytitle=labels[1],
             ztitle=labels[2],
@@ -531,7 +531,7 @@ class VolumeSlicerView(NeuXtalVizWidget):
         actor.SetAxisLabels(1, axis1_label)
         actor.SetAxisLabels(2, axis2_label)
 
-        self.reset_scene()
+        self.main_view.reset_scene()
 
         self.clip.AddObserver("InteractionEvent", self.interaction_callback)
 

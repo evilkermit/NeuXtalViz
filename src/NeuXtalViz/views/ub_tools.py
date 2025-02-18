@@ -37,8 +37,6 @@ from mpl_toolkits.axisartist.grid_finder import (
     MaxNLocator,
 )
 
-from NeuXtalViz.views.base_view import NeuXtalVizWidget
-
 cmaps = {
     "Sequential": "viridis",
     "Binary": "binary",
@@ -47,20 +45,20 @@ cmaps = {
 }
 
 
-class UBView(NeuXtalVizWidget):
+class UBView(QWidget):
     roi_ready = Signal()
     index_ready = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, main_view, parent=None):
         super().__init__(parent)
+
+        self.main_view = main_view
 
         self.tab_widget = QTabWidget(self)
 
         self.parameters_tab()
         self.table_tab()
         self.verify_tab()
-
-        self.layout().addWidget(self.tab_widget, stretch=1)
 
         self.last_highlight = None
 
@@ -1896,7 +1894,7 @@ class UBView(NeuXtalVizWidget):
             return self.filter_time_line.text()
 
     def add_Q_viz(self, Q_dict):
-        self.clear_scene()
+        self.main_view.clear_scene()
 
         signal = Q_dict.get("signal")
         x = Q_dict.get("x")
@@ -1909,7 +1907,7 @@ class UBView(NeuXtalVizWidget):
             point_cloud = pv.PolyData(points)
             point_cloud["scalars"] = signal
 
-            self.plotter.add_mesh(
+            self.main_view.plotter.add_mesh(
                 point_cloud,
                 scalars="scalars",
                 cmap="binary",
@@ -1952,7 +1950,7 @@ class UBView(NeuXtalVizWidget):
             n_colors = 256 if integrate else 2
             clim = [mu - 3 * sigma, mu + 3 * sigma] if integrate else [0, 1]
 
-            _, mapper = self.plotter.add_composite(
+            _, mapper = self.main_view.plotter.add_composite(
                 multiblock,
                 scalars="scalars",
                 color=None,
@@ -1967,16 +1965,16 @@ class UBView(NeuXtalVizWidget):
 
             self.mapper = mapper
 
-            self.plotter.enable_block_picking(
+            self.main_view.plotter.enable_block_picking(
                 callback=self.highlight, side="left"
             )
-            self.plotter.enable_block_picking(
+            self.main_view.plotter.enable_block_picking(
                 callback=self.highlight, side="right"
             )
 
             self.last_highlight = None
 
-        self.reset_scene()
+        self.main_view.reset_scene()
 
     def highlight(self, index, dataset):
         if self.last_highlight is not None:

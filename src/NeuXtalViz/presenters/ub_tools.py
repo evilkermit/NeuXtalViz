@@ -1,11 +1,11 @@
 import numpy as np
 
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
 
-
-class UB(NeuXtalVizPresenter):
-    def __init__(self, view, model):
-        super(UB, self).__init__(view, model)
+class UB:
+    def __init__(self, main_presenter, view, model):
+        self.main_presenter = main_presenter
+        self.view = view
+        self.model = model
 
         self.view.connect_load_Q(self.load_Q)
         self.view.connect_save_Q(self.save_Q)
@@ -129,7 +129,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.convert_Q_process)
         worker.connect_result(self.convert_Q_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -211,7 +211,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.update_instrument_view_process)
         worker.connect_result(self.update_instrument_view_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -288,16 +288,16 @@ class UB(NeuXtalVizPresenter):
         Q_hist = self.model.get_Q_info()
 
         if Q_hist is not None:
-            self.update_processing()
+            self.main_presenter.update_processing()
 
-            self.update_processing("Updating view...", 50)
+            self.main_presenter.update_processing("Updating view...", 50)
 
             self.view.add_Q_viz(Q_hist)
 
             if self.model.has_UB():
                 self.model.update_UB()
 
-                self.update_oriented_lattice()
+                self.main_presenter.update_oriented_lattice()
 
                 self.view.set_transform(self.model.get_transform())
 
@@ -325,7 +325,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.find_peaks_process)
         worker.connect_result(self.find_peaks_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -356,7 +356,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.find_conventional_process)
         worker.connect_result(self.find_conventional_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -386,7 +386,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.find_niggli_process)
         worker.connect_result(self.find_niggli_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -416,7 +416,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.show_cells_process)
         worker.connect_result(self.show_cells_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -446,7 +446,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.select_cell_process)
         worker.connect_result(self.select_cell_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -510,7 +510,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.transform_UB_process)
         worker.connect_result(self.transform_UB_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -540,7 +540,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.refine_UB_process)
         worker.connect_result(self.refine_UB_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -600,7 +600,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.index_peaks_process)
         worker.connect_result(self.index_peaks_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -649,7 +649,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.predict_peaks_process)
         worker.connect_result(self.predict_peaks_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -702,7 +702,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.integrate_peaks_process)
         worker.connect_result(self.integrate_peaks_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -750,7 +750,7 @@ class UB(NeuXtalVizPresenter):
         worker = self.view.worker(self.filter_peaks_process)
         worker.connect_result(self.filter_peaks_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -915,8 +915,8 @@ class UB(NeuXtalVizPresenter):
     def convert_to_hkl(self):
         worker = self.view.worker(self.convert_to_hkl_process)
         worker.connect_result(self.convert_to_hkl_complete)
-        worker.connect_finished(self.update_complete)
-        worker.connect_progress(self.update_processing)
+        worker.connect_finished(self.main_presenter.update_complete)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 

@@ -112,9 +112,9 @@ variable = {
 }
 
 
-class UBModel(NeuXtalVizModel):
-    def __init__(self):
-        super(UBModel, self).__init__()
+class UBModel:
+    def __init__(self, main_model):
+        self.main_model = main_model
 
         self.Q = None
         self.table = "ub_peaks"
@@ -154,7 +154,7 @@ class UBModel(NeuXtalVizModel):
         UB = self.get_UB()
 
         if UB is not None:
-            self.set_UB(UB)
+            self.main_model.set_UB(UB)
 
     def get_instrument_name(self, instrument):
         return beamlines[instrument]["Name"]

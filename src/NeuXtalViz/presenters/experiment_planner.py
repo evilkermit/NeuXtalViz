@@ -1,9 +1,8 @@
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
-
-
-class Experiment(NeuXtalVizPresenter):
-    def __init__(self, view, model):
-        super(Experiment, self).__init__(view, model)
+class Experiment:
+    def __init__(self, main_presenter, view, model):
+        self.main_presenter = main_presenter
+        self.view = view
+        self.model = model
 
         self.view.connect_load_UB(self.load_UB)
         self.view.connect_switch_instrument(self.switch_instrument)
@@ -34,7 +33,7 @@ class Experiment(NeuXtalVizPresenter):
         if filename:
             self.model.load_UB(filename)
 
-            self.update_oriented_lattice()
+            self.main_presenter.update_oriented_lattice()
 
             self.view.set_transform(self.model.get_transform())
 
@@ -96,7 +95,7 @@ class Experiment(NeuXtalVizPresenter):
         worker = self.view.worker(self.calculate_single_process)
         worker.connect_result(self.calculate_single_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -138,7 +137,7 @@ class Experiment(NeuXtalVizPresenter):
         worker = self.view.worker(self.calculate_double_process)
         worker.connect_result(self.calculate_double_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -212,7 +211,7 @@ class Experiment(NeuXtalVizPresenter):
         worker = self.view.worker(self.add_orientation_process)
         worker.connect_result(self.add_orientation_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -273,7 +272,7 @@ class Experiment(NeuXtalVizPresenter):
         worker = self.view.worker(self.optimize_coverage_process)
         worker.connect_result(self.optimize_coverage_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
@@ -380,7 +379,7 @@ class Experiment(NeuXtalVizPresenter):
             self.view.set_instrument(instrument)
             self.switch_instrument()
             self.view.set_mode(mode)
-            self.update_oriented_lattice()
+            self.main_presenter.update_oriented_lattice()
             self.view.set_transform(self.model.get_transform())
             self.view.set_wavelength(wl)
             self.view.set_d_min(d_min)
@@ -398,7 +397,7 @@ class Experiment(NeuXtalVizPresenter):
         worker = self.view.worker(self.add_settings_process)
         worker.connect_result(self.add_settings_complete)
         worker.connect_finished(self.visualize)
-        worker.connect_progress(self.update_processing)
+        worker.connect_progress(self.main_presenter.update_processing)
 
         self.view.start_worker_pool(worker)
 
