@@ -1,9 +1,9 @@
 import numpy as np
 
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
+from NeuXtalViz.presenters.base_view_model import NeuXtalVizViewModel
 
 
-class UB(NeuXtalVizPresenter):
+class UB(NeuXtalVizViewModel):
     def __init__(self, view, model):
         super(UB, self).__init__(view, model)
 

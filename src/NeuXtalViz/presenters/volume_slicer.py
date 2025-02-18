@@ -1,7 +1,7 @@
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
+from NeuXtalViz.presenters.base_view_model import NeuXtalVizViewModel
 
 
-class VolumeSlicer(NeuXtalVizPresenter):
+class VolumeSlicer(NeuXtalVizViewModel):
     def __init__(self, view, model):
         super(VolumeSlicer, self).__init__(view, model)
 

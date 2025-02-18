@@ -1,8 +1,8 @@
 from NeuXtalViz.presenters.periodic_table import PeriodicTable
-from NeuXtalViz.presenters.base_presenter import NeuXtalVizPresenter
+from NeuXtalViz.presenters.base_view_model import NeuXtalVizViewModel
 
 
-class CrystalStructure(NeuXtalVizPresenter):
+class CrystalStructure(NeuXtalVizViewModel):
     def __init__(self, view, model):
         super(CrystalStructure, self).__init__(view, model)
 

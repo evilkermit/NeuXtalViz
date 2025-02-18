@@ -1,3 +1,5 @@
+from functools import partial
+
 from qtpy.QtWidgets import (
     QWidget,
     QFrame,
@@ -32,6 +34,8 @@ from NeuXtalViz.views.utilities import Worker, ThreadPool
 
 
 class NeuXtalVizWidget(QWidget):
+    id = 0  # TODO: Remove, the app currently keeps several instances of this class and we need to creating bindings with unique names for each one due to how nova-mvvm works
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -113,12 +117,10 @@ class NeuXtalVizWidget(QWidget):
         self.view_combo = QComboBox(self)
         self.view_combo.addItem("[hkl]")
         self.view_combo.addItem("[uvw]")
-        self.view_combo.currentIndexChanged.connect(self.update_labels)
 
         self.viewup_combo = QComboBox(self)
         self.viewup_combo.addItem("[hkl]")
         self.viewup_combo.addItem("[uvw]")
-        self.viewup_combo.currentIndexChanged.connect(self.update_labels)
 
         notation = QDoubleValidator.StandardNotation
 
@@ -305,6 +307,49 @@ class NeuXtalVizWidget(QWidget):
 
         return info_tab
 
+    def connect_bindings(self, view_model):
+        # TODO: call from __init__ without arg
+        id = NeuXtalVizWidget.id
+
+        view_model.lattice_parameters_bind.connect(
+            f"oriented_lattice{id}", self.set_oriented_lattice_parameters
+        )
+        view_model.progress_bind.connect(f"progress{id}", self.set_step)
+        view_model.status_bind.connect(f"status{id}", self.set_info)
+        view_model.transform_bind.connect(f"transform{id}", self.set_transform)
+        view_model.up_vector_bind.connect(f"up_vector{id}", self.view_up_vector)
+        view_model.update_labels_bind.connect(f"update_labels{id}", self.update_labels)
+        view_model.vector_bind.connect(f"vector{id}", self.view_vector)
+
+        NeuXtalVizWidget.id += 1
+
+    def connect_widgets(self, view_model):
+        # TODO: call from __init__ without arg
+        self.view_combo.currentIndexChanged.connect(view_model.update_axis_type)
+        self.axis1_line.textChanged.connect(partial(view_model.update_manual_axis, 0))
+        self.axis2_line.textChanged.connect(partial(view_model.update_manual_axis, 1))
+        self.axis3_line.textChanged.connect(partial(view_model.update_manual_axis, 2))
+        self.viewup_combo.currentIndexChanged.connect(view_model.update_up_axis_type)
+        self.axisup1_line.textChanged.connect(
+            partial(view_model.update_manual_up_axis, 0)
+        )
+        self.axisup2_line.textChanged.connect(
+            partial(view_model.update_manual_up_axis, 1)
+        )
+        self.axisup3_line.textChanged.connect(
+            partial(view_model.update_manual_up_axis, 2)
+        )
+        self.manual_button.clicked.connect(view_model.view_manual)
+        self.manualup_button.clicked.connect(view_model.view_up_manual)
+        self.a_star_button.clicked.connect(view_model.view_bc_star)
+        self.b_star_button.clicked.connect(view_model.view_ca_star)
+        self.c_star_button.clicked.connect(view_model.view_ab_star)
+        self.a_button.clicked.connect(view_model.view_bc)
+        self.b_button.clicked.connect(view_model.view_ca)
+        self.c_button.clicked.connect(view_model.view_ab)
+        self.save_button.clicked.connect(self.save_screenshot)
+        self.recip_box.clicked.connect(view_model.change_lattice)
+
     def start_worker_pool(self, worker):
         """
         Create a worker pool.
@@ -347,20 +392,19 @@ class NeuXtalVizWidget(QWidget):
 
         self.progress_bar.setValue(progress)
 
-    def set_oriented_lattice_parameters(
-        self, a, b, c, alpha, beta, gamma, u, v
-    ):
+    def set_oriented_lattice_parameters(self, ol):
         """
         Update the oriented lattice paramters.
 
-        Parameters
-        ----------
+        Parameters (destructured from ol list)
+        --------------------------------------
         a, b, c : float
             Lattice constants.
         alpha, beta, gamma : float
             Lattice angles.
-
         """
+
+        a, b, c, alpha, beta, gamma, u, v = ol
 
         self.ub_a_line.setText("{:.5f}".format(a))
         self.ub_b_line.setText("{:.5f}".format(b))
@@ -374,96 +418,6 @@ class NeuXtalVizWidget(QWidget):
         self.ub_v1_line.setText("{:.4f}".format(v[0]))
         self.ub_v2_line.setText("{:.4f}".format(v[1]))
         self.ub_v3_line.setText("{:.4f}".format(v[2]))
-
-    def connect_manual_axis(self, view_manual):
-        """
-        Manual axis view connection.
-
-        Parameters
-        ----------
-        view_manual : function
-            Manual axis view handler.
-
-        """
-
-        self.manual_button.clicked.connect(view_manual)
-
-    def connect_manual_up_axis(self, view_manual):
-        """
-        Manual axis upv iew connection.
-
-        Parameters
-        ----------
-        view_manual : function
-            Manual axis up view handler.
-
-        """
-
-        self.manualup_button.clicked.connect(view_manual)
-
-    def connect_reciprocal_axes(self, view_a_star, view_b_star, view_c_star):
-        """
-        Reciprocal axes view connections.
-
-        Parameters
-        ----------
-        view_a_star : function
-            :math:`a^\ast`-axis view handler.
-        view_b_star : function
-            :math:`b^\ast`-axis view handler.
-        view_c_star : function
-            :math:`c^\ast`-axis view handler.
-
-        """
-
-        self.a_star_button.clicked.connect(view_a_star)
-        self.b_star_button.clicked.connect(view_b_star)
-        self.c_star_button.clicked.connect(view_c_star)
-
-    def connect_real_axes(self, view_a, view_b, view_c):
-        """
-        Real axes view connections.
-
-        Parameters
-        ----------
-        view_a : function
-            :math:`a`-axis view handler.
-        view_b : function
-            :math:`b`-axis view handler.
-        view_c : function
-            :math:`c`-axis view handler.
-
-        """
-
-        self.a_button.clicked.connect(view_a)
-        self.b_button.clicked.connect(view_b)
-        self.c_button.clicked.connect(view_c)
-
-    def connect_save_screenshot(self, save_screenshot):
-        """
-        Screenshot connection.
-
-        Parameters
-        ----------
-        save_screenshot : function
-            Screenshot handler.
-
-        """
-
-        self.save_button.clicked.connect(save_screenshot)
-
-    def connect_reciprocal_real_compass(self, change_lattice):
-        """
-        Reciprocal/real axis compass
-
-        Parameters
-        ----------
-        change_lattice : function
-            Lattice handler.
-
-        """
-
-        self.recip_box.clicked.connect(change_lattice)
 
     def change_projection(self):
         """
@@ -518,7 +472,10 @@ class NeuXtalVizWidget(QWidget):
 
         """
 
-        self.plotter.screenshot(filename)
+        filename = self.save_screenshot_file_dialog()
+
+        if filename:
+            self.plotter.screenshot(filename)
 
     def save_screenshot_file_dialog(self):
         options = QFileDialog.Options()
@@ -544,45 +501,25 @@ class NeuXtalVizWidget(QWidget):
 
         """
 
-        if self.axes_show():
+        if self.axes_box.isChecked():
             if T is not None:
                 self.T = T
                 self.show_axes()
 
-    def reciprocal_lattice(self):
-        """
-        State of reciprocal lattice vectors.
-
-        """
-
-        return self.recip_box.isChecked()
-
     def show_axes(self):
-        if not self.axes_show():
+        if not self.axes_box.isChecked():
             self.plotter.hide_axes()
         elif self.T is not None:
             t = pv._vtk.vtkMatrix4x4()
             for i in range(3):
                 for j in range(3):
                     t.SetElement(i, j, self.T[i, j])
-            if self.reciprocal_lattice():
-                actor = self.plotter.add_axes(
-                    xlabel="a*", ylabel="b*", zlabel="c*"
-                )
+            if self.recip_box.isChecked():
+                actor = self.plotter.add_axes(xlabel="a*", ylabel="b*", zlabel="c*")
 
             else:
-                actor = self.plotter.add_axes(
-                    xlabel="a", ylabel="b", zlabel="c"
-                )
+                actor = self.plotter.add_axes(xlabel="a", ylabel="b", zlabel="c")
             actor.SetUserMatrix(t)
-
-    def axes_show(self):
-        """
-        State of axes.
-
-        """
-
-        return self.axes_box.isChecked()
 
     def view_vector(self, vecs):
         """
@@ -614,7 +551,7 @@ class NeuXtalVizWidget(QWidget):
 
         self.plotter.set_viewup(vec)
 
-    def update_labels(self):
+    def update_labels(self, _):
         """
         Change the axes labels between Miller and fractional notation.
 
