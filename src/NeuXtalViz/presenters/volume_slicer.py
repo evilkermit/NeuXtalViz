@@ -1,56 +1,106 @@
+from typing import Optional
+
+from nova.mvvm.pyqt5_binding import PyQt5Binding
+from pydantic import BaseModel, Field
+
 from NeuXtalViz.presenters.base_view_model import NeuXtalVizViewModel
+
+
+class VolumeSlicerControls(BaseModel):
+    vol_scale: str = Field(default="linear")
+    opacity: str = Field(default="Linear")
+    opacity_range: str = Field("Low->High")
+    clim_clip_type: str = Field(default="Q₃/Q₁±1.5×IQR")
+    cbar: str = Field(default="Sequential")
+
+    slice_plane: str = Field(default="Axis 1/2")
+    slice_value: Optional[float] = Field(default=0.0, title="Slice")
+    slice_thickness: Optional[float] = Field(default=0.1, title="Thickness")
+    slice_scale: str = Field(default="linear")
+    vlim_clip_type: str = Field(default="Q₃/Q₁±1.5×IQR")
+    vmin: Optional[float] = Field(default=0.0, title="Min")
+    vmax: Optional[float] = Field(default=0.0, title="Max")
+    xmin: Optional[float] = Field(default=0.0, title="X Min")
+    xmax: Optional[float] = Field(default=0.0, title="X Max")
+    ymin: Optional[float] = Field(default=0.0, title="Y Min")
+    ymax: Optional[float] = Field(default=0.0, title="Y Max")
+
+    cut_line: str = Field(default="Axis 1")
+    cut_value: Optional[float] = Field(default=0.0, title="Cut")
+    cut_thickness: Optional[float] = Field(default=0.1, title="Thickness")
+    cut_scale: str = Field(default="linear")
 
 
 class VolumeSlicer(NeuXtalVizViewModel):
     def __init__(self, view, model):
+        self.vs_controls = VolumeSlicerControls()
+
+        binding = PyQt5Binding()
+
+        self.vs_controls_bind = binding.new_bind(self.vs_controls)
+        self.slice_lim_bind = binding.new_bind()
+        self.colorbar_lim_bind = binding.new_bind()
+        self.cut_lim_bind = binding.new_bind()
+        self.redraw_data_bind = binding.new_bind()
+        self.slice_data_bind = binding.new_bind()
+        self.cut_data_bind = binding.new_bind()
+        self.add_histo_bind = binding.new_bind()
+        self.add_slice_bind = binding.new_bind()
+        self.add_cut_bind = binding.new_bind()
+
         super(VolumeSlicer, self).__init__(view, model)
 
-        self.view.connect_load_NXS(self.load_NXS)
+    def set_number(self, key, value):
+        try:
+            setattr(self.vs_controls, key, float(value))
+        except Exception:
+            setattr(self.vs_controls, key, None)
 
-        self.view.connect_slice_combo(self.redraw_data)
-        self.view.connect_cut_combo(self.update_cut)
+    def set_vol_scale(self, value):
+        self.vs_controls.vol_scale = value.lower()
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_slice_thickness_line(self.update_slice)
-        self.view.connect_cut_thickness_line(self.update_cut)
+    def set_opacity(self, value):
+        self.vs_controls.opacity = value
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_clim_combo(self.redraw_data)
-        self.view.connect_cbar_combo(self.redraw_data)
+    def set_opacity_range(self, value):
+        self.vs_controls.opacity_range = value
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_min_slider(self.view.update_colorbar_min)
-        self.view.connect_max_slider(self.view.update_colorbar_max)
+    def set_clim_clip_type(self, value):
+        self.vs_controls.clim_clip_type = value
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_vlim_combo(self.update_slice)
+    def set_cbar(self, value):
+        self.vs_controls.cbar = value
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_slice_scale_combo(self.update_slice)
-        self.view.connect_cut_scale_combo(self.update_cut)
+    def set_slice_plane(self, value):
+        self.vs_controls.slice_plane = value
+        self.redraw_data_bind.update_in_view(None)
 
-        self.view.connect_slice_line(self.redraw_data)
-        self.view.connect_cut_line(self.update_cut)
+    def set_vlim_clip_type(self, value):
+        self.vs_controls.vlim_clip_type = value
+        self.update_slice()
 
-        self.view.connect_slice_ready(self.update_slice)
-        self.view.connect_cut_ready(self.update_cut)
+    def set_slice_scale(self, value):
+        self.vs_controls.slice_scale = value.lower()
+        self.update_slice()
 
-        self.view.connect_vmin_line(self.update_cvals)
-        self.view.connect_vmax_line(self.update_cvals)
+    def set_cut_line(self, value):
+        self.vs_controls.cut_line = value
+        self.update_cut()
 
-        self.view.connect_xmin_line(self.update_lims)
-        self.view.connect_xmax_line(self.update_lims)
+    def set_cut_scale(self, value):
+        self.vs_controls.cut_scale = value.lower()
+        self.update_cut()
 
-        self.view.connect_ymin_line(self.update_lims)
-        self.view.connect_ymax_line(self.update_lims)
-
-        self.view.connect_vol_scale_combo(self.redraw_data)
-        self.view.connect_opacity_combo(self.redraw_data)
-        self.view.connect_range_combo(self.redraw_data)
-
-        self.view.connect_save_slice(self.save_slice)
-        self.view.connect_save_cut(self.save_cut)
-
-    def update_lims(self):
-        xmin = self.view.get_xmin_value()
-        xmax = self.view.get_xmax_value()
-        ymin = self.view.get_ymin_value()
-        ymax = self.view.get_ymax_value()
+    def update_limits(self):
+        xmin = self.vs_controls.xmin
+        xmax = self.vs_controls.xmax
+        ymin = self.vs_controls.ymin
+        ymax = self.vs_controls.ymax
 
         if (
             xmin is not None
@@ -61,59 +111,37 @@ class VolumeSlicer(NeuXtalVizViewModel):
             if xmin < xmax and ymin < ymax:
                 xlim = [xmin, xmax]
                 ylim = [ymin, ymax]
-                self.view.set_slice_lim(xlim, ylim)
-                line_cut = self.view.get_cut()
+                self.slice_lim_bind.update_in_view((xlim, ylim))
+                line_cut = self.vs_controls.cut_line
                 lim = xlim if line_cut == "Axis 1" else ylim
-                self.view.set_cut_lim(lim)
+                self.cut_lim_bind.update_in_view(lim)
 
     def update_cvals(self):
-        vmin = self.view.get_vmin_value()
-        vmax = self.view.get_vmax_value()
+        vmin = self.vs_controls.vmin
+        vmax = self.vs_controls.vmax
         if vmin is not None and vmax is not None:
             if vmin < vmax:
-                if vmin <= 0 and self.view.get_slice_scale() == "log":
+                if vmin <= 0 and self.vs_controls.slice_scale == "log":
                     vmin = vmax / 10
-                self.view.update_colorbar_vlims(vmin, vmax)
-
-    def update_slice_value(self):
-        self.view.update_slice_value()
-
-        self.update_slice()
-
-    def update_cut_value(self):
-        self.view.update_cut_value()
-
-        self.update_cut()
+                self.colorbar_lim_bind.update_in_view((vmin, vmax))
 
     def update_slice(self):
         if self.model.is_histo_loaded():
-            self.slice_data()
+            self.slice_data_bind.update_in_view(None)
 
     def update_cut(self):
         if self.model.is_histo_loaded():
-            self.cut_data()
-
-    def load_NXS(self):
-        filename = self.view.load_NXS_file_dialog()
-
-        if filename:
-            self.nxs_file = filename
-            worker = self.view.worker(self.load_NXS_process)
-            worker.connect_result(self.load_NXS_complete)
-            worker.connect_finished(self.redraw_data)
-            worker.connect_progress(self.update_processing)
-
-            self.view.start_worker_pool(worker)
+            self.cut_data_bind.update_in_view(None)
 
     def load_NXS_complete(self, result):
         self.update_oriented_lattice()
 
-    def load_NXS_process(self, progress):
+    def load_NXS_process(self, filename, progress):
         progress("Processing...", 1)
 
         progress("Loading NeXus file...", 10)
 
-        self.model.load_md_histo_workspace(self.nxs_file)
+        self.model.load_md_histo_workspace(filename)
 
         progress("Loading NeXus file...", 50)
 
@@ -122,7 +150,7 @@ class VolumeSlicer(NeuXtalVizViewModel):
         progress("NeXus file loaded!", 100)
 
     def get_normal(self):
-        slice_plane = self.view.get_slice()
+        slice_plane = self.vs_controls.slice_plane
 
         if slice_plane == "Axis 1/2":
             norm = [0, 0, 1]
@@ -137,7 +165,7 @@ class VolumeSlicer(NeuXtalVizViewModel):
         axis = [1 if not norm else 0 for norm in self.get_normal()]
         ind = [i for i, ax in enumerate(axis) if ax == 1]
 
-        line_cut = self.view.get_cut()
+        line_cut = self.vs_controls.cut_line
 
         if line_cut == "Axis 1":
             axis[ind[0]] = 0
@@ -147,7 +175,7 @@ class VolumeSlicer(NeuXtalVizViewModel):
         return axis
 
     def get_clim_method(self):
-        ctype = self.view.get_clim_clip_type()
+        ctype = self.vs_controls.clim_clip_type
 
         if ctype == "μ±3×σ":
             method = "normal"
@@ -159,7 +187,7 @@ class VolumeSlicer(NeuXtalVizViewModel):
         return method
 
     def get_vlim_method(self):
-        ctype = self.view.get_vlim_clip_type()
+        ctype = self.vs_controls.vlim_clip_type
 
         if ctype == "μ±3×σ":
             method = "normal"
@@ -170,21 +198,13 @@ class VolumeSlicer(NeuXtalVizViewModel):
 
         return method
 
-    def redraw_data(self):
-        worker = self.view.worker(self.redraw_data_process)
-        worker.connect_result(self.redraw_data_complete)
-        worker.connect_finished(self.slice_data)
-        worker.connect_progress(self.update_processing)
-
-        self.view.start_worker_pool(worker)
-
     def redraw_data_complete(self, result):
         if result is not None:
             histo, normal, norm, value, trans = result
 
-            self.view.add_histo(histo, normal, norm, value)
+            self.add_histo_bind.update_in_view((histo, normal, norm, value))
 
-            self.view.set_transform(trans)
+            self.transform_bind.update_in_view(trans)
 
     def redraw_data_process(self, progress):
         if self.model.is_histo_loaded():
@@ -204,7 +224,7 @@ class VolumeSlicer(NeuXtalVizViewModel):
 
             histo["signal"] = data
 
-            value = self.view.get_slice_value()
+            value = self.vs_controls.slice_value
 
             normal = -self.model.get_normal_plane(norm)
 
@@ -218,25 +238,18 @@ class VolumeSlicer(NeuXtalVizViewModel):
             else:
                 progress("Invalid parameters.", 0)
 
-    def slice_data(self):
-        worker = self.view.worker(self.slice_data_process)
-        worker.connect_result(self.slice_data_complete)
-        worker.connect_finished(self.cut_data)
-        worker.connect_progress(self.update_processing)
-
-        self.view.start_worker_pool(worker)
-
     def slice_data_complete(self, result):
         if result is not None:
-            self.view.reset_slider()
-            self.view.add_slice(result)
+            self.add_slice_bind.update_in_view(result)
+            # self.view.reset_slider()
+            # self.view.add_slice(result)
 
     def slice_data_process(self, progress):
         if self.model.is_histo_loaded():
             norm = self.get_normal()
 
-            thick = self.view.get_slice_thickness()
-            value = self.view.get_slice_value()
+            thick = self.vs_controls.slice_thickness
+            value = self.vs_controls.slice_value
 
             if thick is not None:
                 progress("Processing...", 1)
@@ -255,22 +268,14 @@ class VolumeSlicer(NeuXtalVizViewModel):
 
                 return slice_histo
 
-    def cut_data(self):
-        worker = self.view.worker(self.cut_data_process)
-        worker.connect_result(self.cut_data_complete)
-        worker.connect_finished(self.update_complete)
-        worker.connect_progress(self.update_processing)
-
-        self.view.start_worker_pool(worker)
-
     def cut_data_complete(self, result):
         if result is not None:
-            self.view.add_cut(result)
+            self.add_cut_bind.update_in_view(result)
 
     def cut_data_process(self, progress):
         if self.model.is_sliced():
-            value = self.view.get_cut_value()
-            thick = self.view.get_cut_thickness()
+            value = self.vs_controls.cut_value
+            thick = self.vs_controls.cut_thickness
 
             axis = self.get_axis()
 
@@ -285,16 +290,10 @@ class VolumeSlicer(NeuXtalVizViewModel):
 
                 return cut_histo
 
-    def save_slice(self):
+    def save_slice(self, filename):
         if self.model.is_sliced():
-            filename = self.view.save_file_dialog()
+            self.model.save_slice(filename)
 
-            if filename:
-                self.model.save_slice(filename)
-
-    def save_cut(self):
+    def save_cut(self, filename):
         if self.model.is_cut():
-            filename = self.view.save_file_dialog()
-
-            if filename:
-                self.model.save_cut(filename)
+            self.model.save_cut(filename)
