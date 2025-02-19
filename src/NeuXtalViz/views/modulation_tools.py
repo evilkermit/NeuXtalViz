@@ -1,3 +1,5 @@
+from functools import partial
+
 from qtpy.QtWidgets import (
     QWidget,
     QTableWidget,
@@ -36,6 +38,27 @@ class ModulationView(NeuXtalVizWidget):
         self.modulation_tab()
 
         self.layout().addWidget(self.tab_widget, stretch=1)
+
+    def connect_bindings(self, view_model):
+        super().connect_bindings(view_model)
+
+        self.view_model = view_model
+
+        self.view_model.add_peaks_bind.connect(
+            f"add_peaks{NeuXtalVizWidget.id}", self.add_peaks
+        )
+        self.view_model.update_table_bind.connect(
+            f"update_table{NeuXtalVizWidget.id}", self.update_table
+        )
+
+    def connect_widgets(self, view_model):
+        super().connect_widgets(view_model)
+
+        self.cluster_button.clicked.connect(self.cluster)
+        self.load_UB_button.clicked.connect(self.load_UB)
+        self.load_peaks_button.clicked.connect(self.load_peaks)
+        self.param_eps_line.textChanged.connect(partial(self.set_cluster_param, "eps"))
+        self.param_min_line.textChanged.connect(partial(self.set_cluster_param, "min"))
 
     def modulation_tab(self):
         mod_tab = QWidget()
@@ -116,14 +139,10 @@ class ModulationView(NeuXtalVizWidget):
 
         mod_tab.setLayout(modulation_layout)
 
-    def connect_cluster(self, cluster):
-        self.cluster_button.clicked.connect(cluster)
-
-    def connect_load_UB(self, load_UB):
-        self.load_UB_button.clicked.connect(load_UB)
-
-    def connect_load_peaks(self, load_peaks):
-        self.load_peaks_button.clicked.connect(load_peaks)
+    def load_UB(self):
+        filename = self.load_UB_file_dialog()
+        if filename:
+            self.view_model.load_UB(filename)
 
     def load_UB_file_dialog(self):
         options = QFileDialog.Options()
@@ -137,6 +156,11 @@ class ModulationView(NeuXtalVizWidget):
         )
 
         return filename
+
+    def load_peaks(self):
+        filename = self.load_peaks_file_dialog()
+        if filename:
+            self.view_model.load_peaks(filename)
 
     def load_peaks_file_dialog(self):
         options = QFileDialog.Options()
@@ -164,14 +188,22 @@ class ModulationView(NeuXtalVizWidget):
             self.table.setItem(row, 1, QTableWidgetItem(centroid[1]))
             self.table.setItem(row, 2, QTableWidgetItem(centroid[2]))
 
-    def get_cluster_parameters(self):
+    def cluster(self):
+        worker = self.worker(self.view_model.cluster_process)
+        worker.connect_result(self.view_model.cluster_complete)
+        worker.connect_progress(self.view_model.update_processing)
+
+        self.start_worker_pool(worker)
+
+    def set_cluster_param(self, key, value):
         params = [self.param_eps_line, self.param_min_line]
         valid_params = all([param.hasAcceptableInput() for param in params])
 
         if valid_params:
-            return float(self.param_eps_line.text()), int(
-                self.param_min_line.text()
-            )
+            if key == "eps":
+                self.view_model.set_cluster_param(key, float(value))
+            elif key == "min":
+                self.view_model.set_cluster_param(key, int(value))
 
     def add_peaks(self, peak_dict):
         self.plotter.clear_actors()

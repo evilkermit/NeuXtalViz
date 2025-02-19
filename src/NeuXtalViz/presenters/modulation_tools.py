@@ -1,30 +1,37 @@
+from nova.mvvm.pyqt5_binding import PyQt5Binding
+from pydantic import BaseModel, Field
+
 from NeuXtalViz.presenters.base_view_model import NeuXtalVizViewModel
+
+
+class ModulationControls(BaseModel):
+    eps: float = Field(default=0.025)
+    min: int = Field(default=15)
 
 
 class Modulation(NeuXtalVizViewModel):
     def __init__(self, view, model):
+        self.mod_controls = ModulationControls()
+
+        binding = PyQt5Binding()
+
+        self.add_peaks_bind = binding.new_bind()
+        self.update_table_bind = binding.new_bind()
+
         super(Modulation, self).__init__(view, model)
 
-        self.view.connect_cluster(self.cluster)
-        self.view.connect_load_UB(self.load_UB)
-        self.view.connect_load_peaks(self.load_peaks)
-
-    def cluster(self):
-        worker = self.view.worker(self.cluster_process)
-        worker.connect_result(self.cluster_complete)
-        worker.connect_progress(self.update_processing)
-
-        self.view.start_worker_pool(worker)
+    def set_cluster_param(self, key, value):
+        setattr(self.mod_controls, key, value)
 
     def cluster_complete(self, result):
         if result is not None:
             self.update_processing("Adding peaks.", 30)
-            self.view.add_peaks(result)
-            self.view.update_table(result)
+            self.add_peaks_bind.update_in_view(result)
+            self.update_table_bind.update_in_view(result)
             self.update_processing("Peaks added!", 0)
 
     def cluster_process(self, progress):
-        params = self.view.get_cluster_parameters()
+        params = [self.mod_controls.eps, self.mod_controls.min]
 
         if params is not None:
             progress("Invalid parameters.", 0)
@@ -46,26 +53,20 @@ class Modulation(NeuXtalVizViewModel):
         else:
             progress("Invalid parameters.", 0)
 
-    def load_UB(self):
-        filename = self.view.load_UB_file_dialog()
+    def load_UB(self, filename):
+        self.update_processing("Loading peaks.", 30)
 
-        if filename:
-            self.update_processing("Loading peaks.", 30)
+        self.model.load_UB(filename)
 
-            self.model.load_UB(filename)
+        self.update_oriented_lattice()
 
-            self.update_oriented_lattice()
+        self.transform_bind.update_in_view(self.model.get_transform())
 
-            self.view.set_transform(self.model.get_transform())
+        self.update_processing("UB loaded!", 0)
 
-            self.update_processing("UB loaded!", 0)
+    def load_peaks(self, filename):
+        self.update_processing("Loading peaks.", 30)
 
-    def load_peaks(self):
-        filename = self.view.load_peaks_file_dialog()
+        self.model.load_peaks(filename)
 
-        if filename:
-            self.update_processing("Loading peaks.", 30)
-
-            self.model.load_peaks(filename)
-
-            self.update_processing("Peaks loaded!", 0)
+        self.update_processing("Peaks loaded!", 0)
