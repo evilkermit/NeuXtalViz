@@ -241,8 +241,6 @@ class VolumeSlicer(NeuXtalVizViewModel):
     def slice_data_complete(self, result):
         if result is not None:
             self.add_slice_bind.update_in_view(result)
-            # self.view.reset_slider()
-            # self.view.add_slice(result)
 
     def slice_data_process(self, progress):
         if self.model.is_histo_loaded():
