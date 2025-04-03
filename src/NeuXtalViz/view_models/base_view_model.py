@@ -16,12 +16,12 @@ class Controls(BaseModel):
     show_axes: bool = Field(default=True, title="Show Axes")
     parallel_projection: bool = Field(default=True, title="Parallel Projection")
 
-    manual_axis_type: AxisTypeEnum = Field(default=AxisTypeEnum.hkl, title="Axis Type")
+    manual_axis_type: AxisTypeEnum = Field(default=AxisTypeEnum.hkl)
     manual_axes: list[float] = Field(
         default=[0.0, 0.0, 0.0], title="Manual Axis Indices"
     )
     manual_up_axis_type: AxisTypeEnum = Field(
-        default=AxisTypeEnum.hkl, title="Up Axis Type"
+        default=AxisTypeEnum.hkl
     )
     manual_up_axes: list[float] = Field(
         default=[0.0, 0.0, 0.0], title="Manual Up Axis Indices"

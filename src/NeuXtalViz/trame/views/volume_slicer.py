@@ -61,7 +61,7 @@ class VolumeSlicerView:
             self.base_view = VisualizationPanel(self.server, self.view_model)
 
             with VBoxLayout():
-                with HBoxLayout():
+                with HBoxLayout(valign="center"):
                     InputField(v_model="vs_controls.vol_scale", type="select")
                     InputField(v_model="vs_controls.opacity", type="select")
                     InputField(v_model="vs_controls.opacity_range", type="select")
@@ -98,7 +98,7 @@ class VolumeSlicerView:
                         type="slider",
                     )
 
-                with HBoxLayout():
+                with HBoxLayout(valign="center"):
                     InputField(v_model="vs_controls.slice_plane", type="select")
                     InputField(v_model="vs_controls.slice_value")
                     InputField(v_model="vs_controls.slice_thickness")
@@ -120,7 +120,7 @@ class VolumeSlicerView:
 
                     self.cut_view = matplotlib.Figure(self.fig_cut)
 
-                with HBoxLayout():
+                with HBoxLayout(valign="center"):
                     InputField(v_model="vs_controls.cut_line", type="select")
                     InputField(v_model="vs_controls.cut_value")
                     InputField(v_model="vs_controls.cut_thickness")
